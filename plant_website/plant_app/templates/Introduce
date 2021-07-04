@@ -1,0 +1,10 @@
+'''
+Templates
+'''
+
+* It's a convenient way to generate HTML in a dynamic way, they enable you to separate the design from the logic.
+* Templates enable you to separate the design from the code.
+* Logic templates can contain static parts of the desired HTML output,
+  as well as some special syntax that describes how the dynamic content should be inserted.
+* Django comes with its own template engine, and it is called Django template language.
+* A Django project can be configured with one or more template engines.
