@@ -66,16 +66,16 @@
 
   <div class="album py-5 bg-light">
     <div class="container">
-
+      <a>母株</a>
       <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
         {% for plant in plant_object.all %}
         <div class="col">
           <div class="card shadow-sm">
-            <a href="{% url 'page_plant' plant.id %}">
-              <img class ="card-img-top" src="{{ plant.image.url }}">
+            <a href="{% url 'category' plant.mom %}">
+              <img class ="card-img-top" src="{{ plant.mom_image.url }}">
             </a>
             <div class="card-body">
-              <p class="card-text">{{ plant.context }}</p>
+              <p class="card-text">{{ plant.mom }}</p>
               </div>
             </div>
           </div>

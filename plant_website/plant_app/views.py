@@ -1,19 +1,33 @@
 from django.shortcuts import render, get_object_or_404, HttpResponse
-from .models import PlantModel, CustomerModel
+from .models import MomPlantModel, ChildPlantModel, ChildImageModel, CustomerModel
 from .forms import CustomerModelForm
 import datetime
 
 # Create your views here.
 def index(request):
-    plant = PlantModel.objects
-    return render(request, 'index.html', {'plant_object': plant})
+    plant = MomPlantModel.objects
+    context = {
+        'plant_object': plant
+    }
+    return render(request, 'index.html', context)
+
+def category_func(request, mom):
+    plant = ChildPlantModel.objects.all().filter(category=mom)
+    image = []
+    for i in plant:
+        image.append(get_object_or_404(ChildImageModel, name=i))
+    context = {
+        'item': plant,
+        'images': image
+    }
+    return render(request, 'category.html', context)
 
 def plant_page(request, id):
 
-    plant_detail = get_object_or_404(PlantModel, pk=id)
+    plant_detail = get_object_or_404(ChildPlantModel, pk=id)
     form = CustomerModelForm()
     if id:
-        title = PlantModel.objects.get(id=id)
+        title = ChildPlantModel.objects.get(id=id)
         price = plant_detail.price
         inv = int(plant_detail.inventory)
         inv_list = [i+1 for i in range(inv)]
@@ -27,7 +41,7 @@ def plant_page(request, id):
                 qty = request.POST.get('qty')
                 deal_date = datetime.datetime.now()
                 inv -= int(qty)
-                PlantModel.objects.filter(id=id).update(inventory=inv)
+                ChildPlantModel.objects.filter(id=id).update(inventory=inv)
                 CustomerModel.objects.create(
                     title=title,
                     price=price,

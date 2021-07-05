@@ -3,5 +3,5 @@ from .import views
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('<int:id>', views.plant_page, name='page_plant'),
+    path('category/<str:mom>', views.category_func, name='category'),
 ]
