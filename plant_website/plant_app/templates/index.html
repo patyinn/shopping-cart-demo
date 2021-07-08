@@ -14,7 +14,7 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.83.1">
-    <title>Django Courses with postgreSQL</title>
+    <title>首頁</title>
 
     <!-- Bootstrap core CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
@@ -53,6 +53,9 @@
   <section class="py-5 text-center container">
     <div class="row py-lg-5">
       <div class="col-lg-6 col-md-8 mx-auto">
+        <a href="{% url 'Cart' %}">
+          <img src="{% static 'favicon.ico' %}" > 購物車
+        </a>
         <h1 class="fw-light">Learning Bootstrap</h1>
         <p class="lead text-muted">Testing for modify bootstrap content.</p>
         <p>

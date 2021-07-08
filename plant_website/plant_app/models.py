@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+import datetime
 
 # Create your models here.
 class MomPlantModel(models.Model):
@@ -18,8 +19,8 @@ class ChildPlantModel(models.Model):
 
     name = models.CharField(max_length=500, unique=True)
     description = models.CharField(max_length=500)
-    price = models.IntegerField()
-    inventory = models.IntegerField(default=1)
+    price = models.PositiveSmallIntegerField()
+    inventory = models.PositiveSmallIntegerField(default=1)
     main_image = models.ImageField(upload_to=path)
     category = models.ForeignKey("MomPlantModel", to_field="mom", on_delete=models.CASCADE,
                              blank=False, help_text="須從母株模型資料庫新增")
@@ -46,17 +47,44 @@ class ChildImageModel(models.Model):
     def __str__(self):
         return str(self.name) if self.name else ''
 
-
 class CustomerModel(models.Model):
 
-    title = models.ForeignKey(ChildImageModel, on_delete=models.CASCADE, blank=False)
-    price = models.IntegerField()
-    customer = models.CharField(max_length=50)
-    email = models.EmailField(max_length=50)
-    tel = models.IntegerField()
-    address = models.CharField(max_length=50)
-    qty = models.IntegerField()
+    customer = models.CharField(max_length=50, blank=False, null=False, unique=True)
+    email = models.EmailField(blank=False, null=False)
+    tel = models.PositiveIntegerField(blank=False, null=False)
+
+    def __str__(self):
+        return str(self.customer) if self.customer else ''
+
+class TransactionModel(models.Model):
+
+    OrderID = models.CharField(max_length=50, blank=False, unique=True)  # 訂單編號
+    customer = models.OneToOneField(CustomerModel, to_field="customer", on_delete=models.CASCADE, blank=False)  # 客戶姓名
+    payment_method = [
+        ("B", "匯款")
+    ]
+    payment = models.CharField(max_length=1, choices=payment_method, blank=False, default="B")  # 付款方式
+    delivery_method = (
+        ("S", "7-11交貨便 -- (估)60元"),
+        ("P", "郵局宅配  -- (估)80元"),
+        ("F", "面交  -- 限景安/景平捷運站")
+    )
+    delivery = models.CharField(max_length=1, choices=delivery_method, blank=False, default="S")
+    address = models.CharField(max_length=50)  # 運送地址
+    comment = models.CharField(max_length=500, null=True, blank=True)
+    shipping_fee = models.PositiveSmallIntegerField(null=True, blank=True)  # 運費
+    total_payment = models.PositiveIntegerField(blank=False)  # 付款總額
     deal_date = models.DateField(default=timezone.now)  # 成交時間
 
     def __str__(self):
-        return str(self.title) if self.title else ''
+        return str(self.OrderID) if self.OrderID else ''
+
+class OrderModel(models.Model):
+    OrderID = models.ForeignKey(TransactionModel, to_field="OrderID", on_delete=models.CASCADE, blank=False)
+    product = models.ForeignKey(ChildPlantModel, to_field="name", on_delete=models.CASCADE, blank=False)
+    price = models.PositiveSmallIntegerField(blank=False)
+    qty = models.PositiveSmallIntegerField(blank=False, default=1)
+
+    def __str__(self):
+        return str(self.OrderID) if self.OrderID else ''
+
