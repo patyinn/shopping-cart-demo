@@ -16,7 +16,7 @@ def index(request):
     return render(request, 'index.html', context)
 
 def category_page(request, mom):
-
+    print(mom)
     plant = ChildPlantModel.objects.all().filter(category=mom)
     image = []
     for i in plant:
@@ -116,38 +116,47 @@ def order_page(request):
     if 'purchase' in request.POST:
         form1 = CustomerModelForm(request.POST)
         form2 = CustomerModelForm(request.POST)
-        if form1.is_valid() and form2.is_valid():
+        global check_ok
+        # 逐一檢查商品狀態與數量是否符合存貨
+        for prod in Cart_data.index:
+            inv = plant_inventory.get(name=prod).inventory
+            status = plant_inventory.get(name=prod).status
+            qty = int(Cart_data.loc[prod, "quantity"])
 
-            # 逐一檢查商品狀態與數量是否符合存貨
-            for prod in Cart_data.index:
-                inv = plant_inventory.get(name=prod).inventory
-                status = plant_inventory.get(name=prod).status
-                qty = int(Cart_data.loc[prod, "quantity"])
+            if inv >= qty and status == "I":
+                check_ok = True
+            else:
+                check_ok = False
+                product = plant_inventory.get(name=prod)
+                Cart_list.remove(product)
+                break
 
-                if inv >= qty and status == "I":
-                    check_ok = True
-                else:
-                    check_ok = False
-                    product = plant_inventory.get(name=prod)
-                    Cart_list.remove(product)
-                    break
-
-            if check_ok:
+        if check_ok:
+            if form1.is_valid() and form2.is_valid():
 
                 # 新增客戶資料至客戶系統模型上
                 customer = request.POST["customer"]
                 email = request.POST["email"]
                 tel = request.POST["tel"]
-                CustomerModel.objects.create(
-                    customer=customer,
-                    tel=tel,
-                    email=email,
-                )
+                if CustomerModel.objects.filter(customer=customer).exists():
+                    CustomerModel.objects.filter(customer=customer).update(
+                        customer=customer,
+                        tel=tel,
+                        email=email,
+                    )
+                else:
+                    # 新增客戶資料至客戶系統模型上
+                    CustomerModel.objects.create(
+                        customer=customer,
+                        tel=tel,
+                        email=email,
+                    )
 
                 # 新增訂單資訊至交易系統模型上
                 deal_date = datetime.datetime.now()
                 OrderID = datetime.datetime.strftime(deal_date, "%Y%m%d%H%M%S")
-                customer_fk = CustomerModel.objects.only('customer').get(customer=customer)
+                # customer_fk = CustomerModel.objects.only('customer').get(customer=customer)
+                customer_fk = CustomerModel.objects.only("id").get(customer=customer)
                 payment = request.POST["payment"]
                 delivery = request.POST["delivery"]
                 address = request.POST["address"]
@@ -178,12 +187,14 @@ def order_page(request):
                     product_fk = ChildPlantModel.objects.only('name').get(name=prod)
                     price = Cart_data.loc[prod, "price"]
                     qty = Cart_data.loc[prod, "quantity"]
+                    total_price = Cart_data.loc[prod, "total_price"]
 
                     OrderModel.objects.create(
                         OrderID=orderid_fk,
                         product=product_fk,
                         price=price,
                         qty=qty,
+                        total_price=total_price
                     )
 
                     # 修改植物模型的狀態以及訂購完成的存貨數量
@@ -194,14 +205,8 @@ def order_page(request):
                         ChildPlantModel.objects.filter(name=prod).update(status="O")
 
                 Cart_list.clear()
+                return redirect('/OrderComplete/{}'.format(OrderID))
 
-            context = {
-                "check_ok": check_ok,
-                "CustomerModel": CustomerModel,
-                "Transaction": TransactionModel,
-                'shopping_list': Cart_list
-            }
-            return render(request, 'plants/complete_page.html', context)
 
     context = {
         'form1': Customer_form,
@@ -211,29 +216,18 @@ def order_page(request):
     return render(request, 'order.html', context)
 
 
-# if id:
-#     title = ChildPlantModel.objects.get(id=id)
-#     price = plant_detail.price
-#     inv = int(plant_detail.inventory)
-#     inv_list = [i+1 for i in range(inv)]
-#     if 'purchase' in request.POST:
-#         form = CustomerModelForm(request.POST)
-#         if form.is_valid():
-#             customer = request.POST["customer"]
-#             email = request.POST["email"]
-#             add = request.POST["address"]
-#             tel = request.POST["tel"]
-#             qty = request.POST.get('qty')
-#             deal_date = datetime.datetime.now()
-#             inv -= int(qty)
-#             ChildPlantModel.objects.filter(id=id).update(inventory=inv)
-#             CustomerModel.objects.create(
-#                 title=title,
-#                 price=price,
-#                 customer=customer,
-#                 tel=tel,
-#                 address=add,
-#                 qty=qty,
-#                 email=email,
-#                 deal_date=deal_date
-#             )
+def complete_page(request, id):
+    transaction = get_object_or_404(TransactionModel, OrderID=id)
+    order_list = OrderModel.objects.all().filter(OrderID=id)
+    name = transaction.customer
+    customers = get_object_or_404(CustomerModel, customer=name)
+
+    print(check_ok)
+
+    context = {
+        'check_ok': check_ok,
+        "transaction": transaction,
+        "order_list": order_list,
+        "customers": customers
+    }
+    return render(request, 'plants/complete_page.html', context)

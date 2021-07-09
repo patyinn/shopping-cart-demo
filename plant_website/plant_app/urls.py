@@ -12,7 +12,7 @@ urlpatterns = [
     path('UpdateCart/<str:product>', views.Update_cart, name='update_cart'),
     path('Cart', views.get_cart, name='Cart'),
     path('Order', views.order_page, name='Ordering'),
-    # path('OrderComplete', views.complete_page, name='Completion'),
+    path('OrderComplete/<str:id>', views.complete_page, name='Completion'),
 
     path("favicon.ico", RedirectView.as_view(url=staticfiles_storage.url("favicon.ico")))
 ]

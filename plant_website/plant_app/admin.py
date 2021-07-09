@@ -21,6 +21,8 @@ class TransactionInline(admin.TabularInline):
 
     def has_change_permission(self, request, obj=None):
         return False
+    def has_add_permission(self, request, obj=None):
+        return False
 
 class MomAdmin(admin.ModelAdmin):
     list_display = ("mom", "mom_image")

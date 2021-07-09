@@ -1,8 +1,10 @@
 from django import forms
 from .models import CustomerModel, TransactionModel
+from phonenumber_field.formfields import PhoneNumberField
 
 class CustomerModelForm(forms.ModelForm):
 
+    tel = PhoneNumberField()
     class Meta:
         model = CustomerModel
         fields = "__all__"

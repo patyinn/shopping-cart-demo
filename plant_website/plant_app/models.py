@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from phonenumber_field.modelfields import PhoneNumberField
 import datetime
 
 # Create your models here.
@@ -49,9 +50,9 @@ class ChildImageModel(models.Model):
 
 class CustomerModel(models.Model):
 
-    customer = models.CharField(max_length=50, blank=False, null=False, unique=True)
+    customer = models.CharField(max_length=50, blank=False, null=False)
     email = models.EmailField(blank=False, null=False)
-    tel = models.PositiveIntegerField(blank=False, null=False)
+    tel = PhoneNumberField(blank=False, null=False)
 
     def __str__(self):
         return str(self.customer) if self.customer else ''
@@ -59,7 +60,7 @@ class CustomerModel(models.Model):
 class TransactionModel(models.Model):
 
     OrderID = models.CharField(max_length=50, blank=False, unique=True)  # 訂單編號
-    customer = models.OneToOneField(CustomerModel, to_field="customer", on_delete=models.CASCADE, blank=False)  # 客戶姓名
+    customer = models.ForeignKey(CustomerModel, on_delete=models.CASCADE, blank=False)  # 客戶姓名
     payment_method = [
         ("B", "匯款")
     ]
@@ -84,6 +85,7 @@ class OrderModel(models.Model):
     product = models.ForeignKey(ChildPlantModel, to_field="name", on_delete=models.CASCADE, blank=False)
     price = models.PositiveSmallIntegerField(blank=False)
     qty = models.PositiveSmallIntegerField(blank=False, default=1)
+    total_price = models.PositiveSmallIntegerField(blank=False)
 
     def __str__(self):
         return str(self.OrderID) if self.OrderID else ''
