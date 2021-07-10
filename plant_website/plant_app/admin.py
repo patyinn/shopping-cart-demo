@@ -1,5 +1,7 @@
 from django.contrib import admin
 from .models import MomPlantModel, ChildPlantModel, ChildImageModel, CustomerModel, TransactionModel, OrderModel
+from django.utils.translation import ugettext_lazy as _
+from django.utils.safestring import mark_safe
 
 class ChildImageInline(admin.TabularInline):
     model = ChildImageModel
@@ -34,8 +36,40 @@ class ChildPlantAdmin(admin.ModelAdmin):
     list_filter = ['status', "category"]
     inlines = [ChildImageInline, OrderInline]
 
+    # test for per-view picture
+    # 用 html 語法嵌入 Admin 頁面
+    def image_tag(self, obj):
+        try:
+            img = mark_safe('<img src="%s" width="200px" />' % obj.main_image.url)
+        except Exception as e:
+            img = ''
+        return img
+    # 欄位名稱
+    image_tag.short_description = _('main_image')
+    # 允許執行 image_tag 中回傳的 html 語法，若為 False(預設)則會被視為純文字
+    image_tag.allow_tags = True
+
+    # 將 image_tag 函示加入成為其中一個欄位
+    readonly_fields = ['image_tag', ]
+
 class ChildImageAdmin(admin.ModelAdmin):
     list_filter = ['name']
+
+    # 用 html 語法嵌入 Admin 頁面
+    def image_tag(self, obj):
+        try:
+            img = mark_safe('<img src="/media/%s" width="200px" />' % obj.imageA)
+        except Exception as e:
+            img = ''
+        return img
+    # 欄位名稱
+    image_tag.short_description = _('imageA')
+    # 允許執行 image_tag 中回傳的 html 語法，若為 False(預設)則會被視為純文字
+    image_tag.allow_tags = True
+
+    # 將 image_tag 函示加入成為其中一個欄位
+    readonly_fields = ['image_tag', ]
+
 
 class CustomerAdmin(admin.ModelAdmin):
     list_display = ("customer", "email", "tel")

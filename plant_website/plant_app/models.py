@@ -1,7 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
-import datetime
+from django.utils.translation import ugettext_lazy as _
+from django.utils.safestring import mark_safe
 
 # Create your models here.
 class MomPlantModel(models.Model):
@@ -11,7 +12,6 @@ class MomPlantModel(models.Model):
 
     def __str__(self):
         return str(self.mom) if self.mom else ''
-
 
 def path(instance, filename):
     return 'gallery/{0}/{1}'.format(instance.name, filename)
@@ -30,6 +30,7 @@ class ChildPlantModel(models.Model):
         ('O', "無庫存")
     )
     status = models.CharField(max_length=1, choices=PRODUCT_STATUS, blank=True, default="I")
+
     class Meta:
         ordering = ['name']
     def __str__(self):

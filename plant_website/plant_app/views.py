@@ -10,14 +10,16 @@ import pandas as pd
 def index(request):
 
     plant = MomPlantModel.objects
+    num = Cart(request).count()
     context = {
-        'plant_object': plant
+        'plant_object': plant,
+        "Cart_nums": num
     }
     return render(request, 'index.html', context)
 
 def category_page(request, mom):
-    print(mom)
     plant = ChildPlantModel.objects.all().filter(category=mom)
+    num = Cart(request).count()
     image = []
     for i in plant:
         image.append(get_object_or_404(ChildImageModel, name=i))
@@ -26,7 +28,8 @@ def category_page(request, mom):
         # https://bootstrap5.hexschool.com/docs/5.0/components/carousel/#how-it-works
         # https://blog.csdn.net/qq_44302282/article/details/108326844
         # 輪播插件
-        'images': image
+        'images': image,
+        "Cart_nums": num
     }
     return render(request, 'category.html', context)
 
@@ -34,13 +37,18 @@ def plant_page(request, child):
 
     plant_detail = get_object_or_404(ChildPlantModel, name=child)
     plant_image = ChildImageModel.objects.get(name=child)
+    mom = plant_detail.category
+    plant = ChildPlantModel.objects.all().filter(category=mom)
     image_list = [i for i in vars(plant_image).values()][3:]
     image_list = [os.path.join('/media', str(i)) for i in image_list if i != '']
     image_list.insert(0, plant_detail.main_image.url)
+    num = Cart(request).count()
 
     context = {
+        'item': plant,
         'details': plant_detail,
         'images': image_list,
+        "Cart_nums": num
     }
     return render(request, 'plants/detail.html', context)
 
@@ -62,7 +70,6 @@ def remove_from_cart(request, product):
 def Update_cart(request, product):
     if 'update' in request.POST:
         qty = request.POST["qty"]
-        print(qty)
         product = ChildPlantModel.objects.get(name=product)
         Cart_list = Cart(request)
         Cart_list.update(product, qty, product.price)
@@ -74,6 +81,7 @@ def Update_cart(request, product):
 def get_cart(request):
     plant_detail = ChildPlantModel.objects
     Cart_list = Cart(request)
+    num = Cart_list.count()
     inv_list = []
     image_list = []
     for item in Cart_list:
@@ -91,7 +99,8 @@ def get_cart(request):
         'cart': Cart_list,
         'inv_list': inv_list,
         'image_list': image_list,
-        'product': plant_detail
+        'product': plant_detail,
+        "Cart_nums": num
     }
     return render(request, 'cart.html', context)
 
@@ -101,6 +110,7 @@ def order_page(request):
     Customer_form = CustomerModelForm()
     Transcation_form = TranscationModelForm()
     Cart_list = Cart(request)
+    num = Cart_list.count()
 
     # 取得從購物車中確認的購買資料
     Cart_data = pd.DataFrame()
@@ -211,7 +221,8 @@ def order_page(request):
     context = {
         'form1': Customer_form,
         'form2': Transcation_form,
-        'shopping_list': Cart_list
+        'shopping_list': Cart_list,
+        "Cart_nums": num
     }
     return render(request, 'order.html', context)
 
@@ -221,8 +232,6 @@ def complete_page(request, id):
     order_list = OrderModel.objects.all().filter(OrderID=id)
     name = transaction.customer
     customers = get_object_or_404(CustomerModel, customer=name)
-
-    print(check_ok)
 
     context = {
         'check_ok': check_ok,

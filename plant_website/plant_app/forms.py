@@ -4,14 +4,13 @@ from phonenumber_field.formfields import PhoneNumberField
 
 class CustomerModelForm(forms.ModelForm):
 
-    tel = PhoneNumberField()
     class Meta:
         model = CustomerModel
         fields = "__all__"
         widgets = {
-            'customer': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:50%;', "placeholder": "您的大名"}),
-            'email': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:50%;', "placeholder": "電子信箱"}),
-            'tel': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:50%;', "placeholder": "連絡電話"}),
+            'customer': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:100%;', "placeholder": "您的大名"}),
+            'email': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:100%;', "placeholder": "電子信箱"}),
+            'tel': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:100%;', "placeholder": "連絡電話"}),
         }
         labels = {
             'customer': '收件姓名',
@@ -32,12 +31,12 @@ class TranscationModelForm(forms.ModelForm):
         delivery = forms.ChoiceField(choices=[doc.delivery for doc in TransactionModel.objects.all()])
         fields = ["payment", "delivery", "address", "comment"]
         widgets = {
-            'payment': forms.Select(attrs={'class': 'select'}),
-            'delivery': forms.Select(attrs={'class': 'select', 'onchange': 'actionform.submit();'}),
+            'payment': forms.Select(attrs={'class': 'form-control', 'style': 'width:50%'}),
+            'delivery': forms.Select(attrs={'class': 'form-control select', 'style': 'width:50%'}),
             'address': forms.TextInput(
-                attrs={'class': 'form-control', 'style': 'width:50%;', "placeholder": "請選擇711店家, 宅配地點或是面交地點(限捷運景平、景安)"}),
+                attrs={'class': 'form-control', 'style': 'width:100%;', "placeholder": "請選擇711店家, 宅配地點或是面交地點(限捷運景平、景安)"}),
             'comment': forms.TextInput(
-                attrs={'class': 'form-control', 'style': 'width:50%;', "placeholder": "想說的話"}),
+                attrs={'class': 'form-control', 'style': 'height:100px; width:100%;', "placeholder": "想說的話"}),
         }
         labels = {
             'payment': '付款方式',
