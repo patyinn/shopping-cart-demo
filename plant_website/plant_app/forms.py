@@ -1,12 +1,15 @@
 from django import forms
-from .models import CustomerModel, TransactionModel
 from phonenumber_field.formfields import PhoneNumberField
+from .models import CustomerModel, TransactionModel
+from django.contrib.auth.forms import UserCreationForm
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import User
 
 class CustomerModelForm(forms.ModelForm):
 
     class Meta:
         model = CustomerModel
-        fields = "__all__"
+        fields = ['customer', 'email', 'tel']
         widgets = {
             'customer': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:100%;', "placeholder": "您的大名"}),
             'email': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:100%;', "placeholder": "電子信箱"}),
@@ -44,3 +47,52 @@ class TranscationModelForm(forms.ModelForm):
             'address': '交易地址',
             'comment': "備註"
         }
+
+class RegisterModelForm(UserCreationForm):
+
+    username = forms.EmailField(
+        label="電子信箱",
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'autocomplete': 'email'}),
+        error_messages={
+            'invalid': '請輸入有效電子信箱',
+            'required': '尚未輸入電子信箱',
+        }
+    )
+    password1 = forms.CharField(
+        label="密碼",
+        strip=False,
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        error_messages={'required': '尚未輸入密碼'}
+    )
+    password2 = forms.CharField(
+        label="密碼確認",
+        strip=False,
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        error_messages={'required': '尚未輸入密碼'}
+    )
+    error_messages = {
+        'password_mismatch': _('兩次密碼輸入不同'),
+    }
+
+    class Meta:
+        model = User
+        fields = ('username', 'password1', 'password2')
+
+class LoginModelForm(forms.Form):
+
+    username = forms.EmailField(
+        label="電子信箱",
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'autocomplete': 'email'}),
+        error_messages={
+            'invalid': '請輸入有效電子信箱',
+            'required': '尚未輸入電子信箱',
+        }
+    )
+    password = forms.CharField(
+        label="密碼",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = User
+        fields = ('username', 'password')

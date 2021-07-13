@@ -14,5 +14,9 @@ urlpatterns = [
     path('Order', views.order_page, name='Ordering'),
     path('OrderComplete/<str:id>', views.complete_page, name='Completion'),
 
+    path('login', views.login_page, name='Login'),
+    path('registration', views.register_page, name='Registration'),
+    path('logout', views.logout_page, name='Logout'),
+
     path("favicon.ico", RedirectView.as_view(url=staticfiles_storage.url("favicon.ico")))
 ]

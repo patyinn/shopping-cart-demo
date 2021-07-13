@@ -32,7 +32,7 @@ class MomAdmin(admin.ModelAdmin):
     inlines = [ChildPlantInline]
 
 class ChildPlantAdmin(admin.ModelAdmin):
-    list_display = ("name", "price", "status", "category", "inventory")
+    list_display = ("name", "price", "sale_price", "status", "category", "inventory")
     list_filter = ['status', "category"]
     inlines = [ChildImageInline, OrderInline]
 

@@ -1,10 +1,43 @@
 from django.db import models
 from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
-from django.utils.translation import ugettext_lazy as _
-from django.utils.safestring import mark_safe
+from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
 # Create your models here.
+class AccountManager(BaseUserManager):
+    def create_user(self, email, telephone, name, password=None):
+        if not email:
+            raise ValueError('Users must have an email address')
+        user = self.model(
+            email=self.normalize_email(email),
+          )
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+
+class Account(AbstractBaseUser):
+    email = models.EmailField(unique=True)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    last_login = models.DateTimeField(auto_now=True)
+    is_admin = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    objects = AccountManager()
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['name', 'telephone']
+
+    def __str__(self):
+        return self.email
+
+    def is_staff(self):
+        return self.is_admin
+
+    def has_perm(self, perm, obj=None):
+        return self.is_admin
+
+    def has_module_perms(self, app_label):
+        return self.is_admin
+
 class MomPlantModel(models.Model):
 
     mom = models.CharField(max_length=50, unique=True)
@@ -20,7 +53,8 @@ class ChildPlantModel(models.Model):
 
     name = models.CharField(max_length=500, unique=True)
     description = models.CharField(max_length=500)
-    price = models.PositiveSmallIntegerField()
+    price = models.PositiveSmallIntegerField(blank=False)
+    sale_price = models.PositiveSmallIntegerField(blank=True, null=True)
     inventory = models.PositiveSmallIntegerField(default=1)
     main_image = models.ImageField(upload_to=path)
     category = models.ForeignKey("MomPlantModel", to_field="mom", on_delete=models.CASCADE,
@@ -54,6 +88,7 @@ class CustomerModel(models.Model):
     customer = models.CharField(max_length=50, blank=False, null=False)
     email = models.EmailField(blank=False, null=False)
     tel = PhoneNumberField(blank=False, null=False)
+    username = models.EmailField(blank=True, null=True)
 
     def __str__(self):
         return str(self.customer) if self.customer else ''
@@ -90,4 +125,3 @@ class OrderModel(models.Model):
 
     def __str__(self):
         return str(self.OrderID) if self.OrderID else ''
-
