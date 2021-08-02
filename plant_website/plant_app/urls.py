@@ -12,11 +12,12 @@ urlpatterns = [
     path('UpdateCart/<str:product>', views.Update_cart, name='update_cart'),
     path('Cart', views.get_cart, name='Cart'),
     path('Order', views.order_page, name='Ordering'),
-    path('OrderComplete/<str:id>', views.complete_page, name='Completion'),
+    path('OrderComplete/<str:order_id>', views.complete_page, name='Completion'),
 
-    path('login', views.login_page, name='Login'),
-    path('registration', views.register_page, name='Registration'),
-    path('logout', views.logout_page, name='Logout'),
+    path('accounts/login', views.login_page, name='Login'),
+    path('accounts/registration', views.register_page, name='Registration'),
+    path('accounts/logout', views.logout_page, name='Logout'),
+    path('activate/<str:token>', views.activate_page, name='Activate'),
 
     path("favicon.ico", RedirectView.as_view(url=staticfiles_storage.url("favicon.ico")))
 ]

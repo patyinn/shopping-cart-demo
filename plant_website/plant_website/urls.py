@@ -21,7 +21,9 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('plant_app.urls'))
+    path('', include('plant_app.urls')),
+    # django-allauth 網址
+    path('accounts/', include('allauth.urls'))
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

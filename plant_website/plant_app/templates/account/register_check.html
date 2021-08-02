@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+	<meta charset="UTF-8">
+</head>
+<body>
+    <h3> {{ username }} 您好 </h3>
+    <p>    感謝您的註冊    </p>
+    <p>
+    現在只要點擊下方連結，即可完成註冊
+    </p>
+    <p>
+    <a style="text-decoration:none; background-color: black; border: black 1px solid; color: #fff; padding:10px 10px;" href="{{ request.scheme  }}://{{ request.get_host }}{% url 'Activate' token %}">
+    <strong>驗證鏈結</strong>
+    </a>
+    </p>
+</body>
+</html>

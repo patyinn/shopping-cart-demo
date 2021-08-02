@@ -10,11 +10,8 @@
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
     <!-- Bootstrap icons-->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
-    <!-- Core theme CSS (includes Bootstrap)-->
-    <link href="css/styles.css" rel="stylesheet" />
 </head>
 <body>
-    <!-- Navigation-->
     <!-- Navigation-->
     <nav class="navbar navbar-expand-lg navbar-light bg-light" role="navigation">
     {% load static %}
@@ -59,7 +56,7 @@
     <div class="container py-5" >
 
     {% block content %}
-    <form method="post">
+    <form method="post" id="registration_form">
         {% csrf_token %}
         <div class="container">
             {{ form  }}
@@ -70,14 +67,19 @@
     {% endblock  %}
     </div>
 
-    </section>
-        <!-- Footer-->
-        <footer class="py-5 bg-dark" style="bottom:0; position:fixed; left: 0; right: 0;">
-            <div class="container"><p class="m-0 text-center text-white">Copyright © Your Website 2021</p></div>
-        </footer>
-        <!-- Bootstrap core JS-->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Core theme JS-->
-        <script src="js/scripts.js"></script>
+    <!-- Footer-->
+    <footer class="py-5 bg-dark" style="bottom:0; position:fixed; left: 0; right: 0;">
+        <div class="container"><p class="m-0 text-center text-white">Copyright © Your Website 2021</p></div>
+    </footer>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $("#registration_form").on('submit', function(event){
+                 alert("收到註冊，請於10分鐘內製信箱收取驗證信件，已完成註冊，Thanks!");
+            });
+        });
+    </script>
 </body>
 </html>

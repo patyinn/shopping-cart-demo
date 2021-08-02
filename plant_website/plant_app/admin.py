@@ -72,6 +72,7 @@ class ChildImageAdmin(admin.ModelAdmin):
 
 
 class CustomerAdmin(admin.ModelAdmin):
+    list_filter = ['username']
     list_display = ("customer", "email", "tel")
     inlines = [TransactionInline]
 

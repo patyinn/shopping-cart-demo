@@ -112,6 +112,7 @@ class TransactionModel(models.Model):
     shipping_fee = models.PositiveSmallIntegerField(null=True, blank=True)  # 運費
     total_payment = models.PositiveIntegerField(blank=False)  # 付款總額
     deal_date = models.DateField(default=timezone.now)  # 成交時間
+    show_info = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.OrderID) if self.OrderID else ''
