@@ -149,7 +149,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'plantdb',
         'USER': 'django-admin',
-        'PASSWORD': 'bpxu31p4204',
+        'PASSWORD': '',
         'HOST': '127.0.0.1',
         'PORT': '3306',
     }
@@ -209,7 +209,7 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # https://www.learncodewithmike.com/2020/05/django-send-email.html
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  #SMTP伺服器
-EMAIL_PORT = 587  #TLS通訊埠號
+EMAIL_PORT =   #TLS通訊埠號
 EMAIL_USE_TLS = True  #開啟TLS(傳輸層安全性)
-EMAIL_HOST_USER = 'patyinn1@gmail.com'  #寄件者電子郵件
-EMAIL_HOST_PASSWORD = 'axquwxgvdiizdvph'  #Gmail應用程式的密碼
+EMAIL_HOST_USER = ''  #寄件者電子郵件
+EMAIL_HOST_PASSWORD = ''  #Gmail應用程式的密碼
