@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="utf-8" />
+</head>
+<body>
+<!-- Header-->
+{% load static %}
+<header class="bg-dark py-5">
+    <div class="container px-4 px-lg-5 my-5">
+        <div class="text-center text-white">
+            <h1 class="display-4 fw-bolder">
+                <img src="{{ request.get_host }}{% static 'Logo_black.png' %}" height="100px" width="100px">
+                {{ request.get_host }}{% static 'Logo_black.png' %}
+                您的交易資訊
+            </h1>
+            <p class="lead fw-normal text-white-50 mb-0">訂單明細</p>
+        </div>
+    </div>
+</header>
+<div class="container py-5">
+    <main>
+        {% if check_ok %}
+        <div class="row g-5">
+        <div class="col-md-5 col-lg-4 order-md-last">
+        <h4 class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-primary">訂單內容</span>
+        </h4>
+        <ul class="list-group mb-3">
+        {% for item in order_list %}
+        <li class="list-group-item d-flex justify-content-between lh-sm">
+        <div>
+          <h6 class="my-0">{{ item.product }}</h6>
+          <small class="text-muted">x {{ item.qty }}</small>
+        </div>
+        <span>${{ item.total_price }}元</span>
+        </li>
+        {% if forloop.last %}
+          <li class="list-group-item d-flex justify-content-between lh-sm">
+            <div>
+              <h6 class="my-0">預估運費:</h6>
+            </div>
+            {% if transaction.delivery == "S" %}
+            <span>$60元</span>
+            {% elif transaction.delivery == "P" %}
+            <span>$80元</span>
+            {% elif transaction.delivery == "F" %}
+            <span>$0元</span>
+            {% endif %}
+          </li>
+        {% endif %}
+        {% endfor %}
+
+        <li class="list-group-item d-flex justify-content-between">
+        <span>總計，含運費 (TWD)</span>
+        <strong>{{ transaction.total_payment }}元</strong>
+        </li>
+        </ul>
+        </div>
+
+        <div class="col-md-7 col-lg-8">
+        <div class='row'>
+        <div class='col-sm-12'>
+        <h4 class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-primary">訂單詳細資訊</span>
+        </h4>
+        <div class='panel panel-info'>
+
+            <div><a> 訂單編號: {{ transaction.OrderID }}</a></div>
+            <div><a> 顧客姓名: {{ customers.customer }}</a></div>
+            <div><a> 電子信箱: {{ customers.email }}</a></div>
+            <div><a> 電話: {{ customers.tel }}</a></div>
+            {% if transaction.payment == "B" %}
+            <div><a> 付款方式: 匯款</a></div>
+            {% endif %}
+            {% if transaction.delivery == "S" %}
+            <div><a> 運送方式: 711交貨便</a></div>
+            {% elif transaction.delivery == "P" %}
+            <div><a> 運送方式: 郵局宅配</a></div>
+            {% elif transaction.delivery == "F" %}
+            <div><a> 運送方式: 面交</a></div>
+            {% endif %}
+            <div><a> 運送地址: {{ transaction.address }}</a></div>
+            <div><a> 備註: {{ transaction.comment }}</a></div>
+            <div><a> 總付款(預估，含運費): TWD{{ transaction.total_payment }}</a></div>
+            <div><a> 交易日期: {{ transaction.deal_date }}</a></div>
+        </div>
+        </div>
+        </div>
+        </div>
+        </div>
+        {% endif %}
+    </main>
+</div>
+</body>
+</html>

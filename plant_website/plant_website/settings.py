@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-4l*sgmyy&(egah%1mkq@z61ss-jn+349p8l9&2!s15&iak15w+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '54.249.161.159']
 
 
 # Application definition
@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     'plant_app.apps.PlantAppConfig',
 
     # install app
-    'cart',
     'multiforloop',
     'phonenumber_field',
     'django.contrib.sites',
@@ -53,6 +52,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
 ]
+
+CART_SESSION_ID = 'cart'
 
 # 為網站ID，自己定義
 # https://www.learncodewithmike.com/2020/04/django-allauth-google.html
@@ -147,9 +148,9 @@ WSGI_APPLICATION = 'plant_website.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'plantdb',
-        'USER': 'django-admin',
-        'PASSWORD': '',
+        'NAME': 'plantDB',
+        'USER': 'root',
+        'PASSWORD': 'bpxu31p4204',
         'HOST': '127.0.0.1',
         'PORT': '3306',
     }
@@ -157,8 +158,7 @@ DATABASES = {
 
 
 # Password validation
-# https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
-
+# https://docs.djangoproject.com/en/3.2/ref/settings/#auth-passwor
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -209,7 +209,7 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # https://www.learncodewithmike.com/2020/05/django-send-email.html
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  #SMTP伺服器
-EMAIL_PORT =   #TLS通訊埠號
+EMAIL_PORT = 587  #TLS通訊埠號
 EMAIL_USE_TLS = True  #開啟TLS(傳輸層安全性)
-EMAIL_HOST_USER = ''  #寄件者電子郵件
-EMAIL_HOST_PASSWORD = ''  #Gmail應用程式的密碼
+EMAIL_HOST_USER = 'patyinn1@gmail.com'  #寄件者電子郵件
+EMAIL_HOST_PASSWORD = 'zevoqehczygagchu'  #Gmail應用程式的密碼

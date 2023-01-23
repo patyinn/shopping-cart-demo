@@ -14,7 +14,6 @@ from .token import Token
 from django.contrib import messages
 
 from .models import MomPlantModel, ChildPlantModel, ChildImageModel, CustomerModel, TransactionModel, OrderModel, Account
-from cart.cart import Cart
 from .forms import CustomerModelForm, TranscationModelForm, RegisterModelForm, LoginModelForm
 import datetime
 import os
@@ -23,22 +22,23 @@ import pandas as pd
 # Create your views here.
 def index(request):
     plant = MomPlantModel.objects
-    num = Cart(request).count()
 
     context = {
         'plant_object': plant,
-        "Cart_nums": num
+        # "Cart_nums": num
     }
     return render(request, 'index.html', context)
 
 
 def category_page(request, mom):
     mom_plant = MomPlantModel.objects
-    plant = ChildPlantModel.objects.all().filter(category=mom)
-    num = Cart(request).count()
+    plant = ChildPlantModel.objects.filter(category=mom)
+
+    # num = Cart(request).count()
     image = []
     for i in plant:
-        image.append(get_object_or_404(ChildImageModel, name=i))
+        image.append(list(ChildImageModel.objects.filter(name=i)))
+
     context = {
         'plant_object': mom_plant,
         'item': plant,
@@ -46,7 +46,7 @@ def category_page(request, mom):
         # https://blog.csdn.net/qq_44302282/article/details/108326844
         # 輪播插件
         'images': image,
-        "Cart_nums": num
+        # "Cart_nums": num
     }
     return render(request, 'plants/category.html', context)
 
@@ -60,22 +60,20 @@ def plant_page(request, child):
     image_list = [i for i in vars(plant_image).values()][3:]
     image_list = [os.path.join('/media', str(i)) for i in image_list if i != '']
     image_list.insert(0, plant_detail.main_image.url)
-    num = Cart(request).count()
+    # num = Cart(request).count()
 
     context = {
         'plant_object': mom_plant,
         'item': plant,
         'details': plant_detail,
         'images': image_list,
-        "Cart_nums": num
+        # "Cart_nums": num
     }
     return render(request, 'plants/detail.html', context)
 
 
-# https://cloud.tencent.com/developer/article/1174798
 def add_to_cart(request, product):
     product = ChildPlantModel.objects.get(name=product)
-    cart = Cart(request)
     quantity = 1
     if product.sale_price is not None:
         cart.add(product, product.sale_price, quantity)
@@ -86,7 +84,6 @@ def add_to_cart(request, product):
 
 def remove_from_cart(request, product):
     product = ChildPlantModel.objects.get(name=product)
-    Cart_list = Cart(request)
     Cart_list.remove(product)
     return redirect('/Cart')
 
@@ -95,7 +92,6 @@ def Update_cart(request, product):
     if 'update' in request.POST:
         qty = request.POST["qty"]
         product = ChildPlantModel.objects.get(name=product)
-        Cart_list = Cart(request)
 
         if product.sale_price is not None:
             Cart_list.update(product, qty, product.sale_price)
@@ -109,34 +105,7 @@ def Update_cart(request, product):
 
 # https://stackoverflow.com/questions/64915167/how-do-i-use-a-django-url-inside-of-an-option-tag-in-a-dropdown-menu
 def get_cart(request):
-    mom_plant = MomPlantModel.objects
-    plant_detail = ChildPlantModel.objects
-    Cart_list = Cart(request)
-    num = Cart_list.count()
-    inv_list = []
-    image_list = []
-    for item in Cart_list:
-        plant = item.product.name
-        model = plant_detail.get(name=plant)
-        if model.sale_price is not None:
-            price = model.sale_price
-        else:
-            price = model.price
-        qty = int(item.quantity)
-        inv = int(model.inventory)
-        if qty >= inv:
-            Cart_list.update(model, inv, price)
-        inv_list.append([i + 1 for i in range(inv)])
-        image_list.append(model.main_image)
-
-    context = {
-        'plant_object': mom_plant,
-        'cart': Cart_list,
-        'inv_list': inv_list,
-        'image_list': image_list,
-        'product': plant_detail,
-        "Cart_nums": num
-    }
+    context = {}
     return render(request, 'shopping/cart.html', context)
 
 # @login_required(login_url="Login")
@@ -145,7 +114,6 @@ def order_page(request):
     plant_inventory = ChildPlantModel.objects
     Customer_form = CustomerModelForm()
     Transcation_form = TranscationModelForm()
-    Cart_list = Cart(request)
 
     if CustomerModel.objects.filter(username=request.user.username).exists():
         saved_customer = CustomerModel.objects.filter(username=request.user.username)
@@ -163,7 +131,6 @@ def order_page(request):
             saved_info = saved_payment
     else:
         saved_info = "無儲存紀錄"
-    num = Cart_list.count()
 
     if 'take' in request.POST and request.user.is_authenticated:
         id = request.POST["Submit"]
@@ -195,7 +162,11 @@ def order_page(request):
             'quantity': item.quantity,
             'total_price': item.total_price,
         }, ignore_index=True)
-    Cart_data = Cart_data.set_index(['name'])
+    try:
+        Cart_data = Cart_data.set_index(['name'])
+    except:
+        messages.warning(request, "出狀況，請重新再執行一次")
+        return redirect('Cart')
 
     if 'purchase' in request.POST:
         form1 = CustomerModelForm(request.POST)
@@ -355,7 +326,7 @@ def complete_page(request, order_id):
         )
         email.attach_alternative(email_template, "text/html")
         email.fail_silently = False
-        email.send()
+        # email.send()
 
 
     return render(request, 'shopping/complete_page.html', context)

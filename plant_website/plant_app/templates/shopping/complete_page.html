@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>完成訂單</title>
+    <!-- Favicon-->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Bootstrap icons-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+</head>
+    <body>
+    <!-- Navigation-->
+    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light" role="navigation">
+    {% load static %}
+    <div class="container px-4 px-lg-5">
+        <a class="navbar-brand" href="/"><img src="{% static 'Logo_black.png' %}" height="50px" width="50px">休息一下</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#!">About</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Shop</a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="#!">All Products</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            {% for plant in plant_object.all %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'category' plant.mom %}">鹿角蕨</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                </ul>
+                <form class="d-flex">
+                    <a class="btn btn-outline-dark" href="{% url 'Cart' %}">
+                        <i class="bi-cart-fill me-1"></i>
+                        Cart
+                        <span class="badge bg-dark text-white ms-1 rounded-pill">{{ Cart_nums }}</span>
+                    </a>
+                </form>
+                {% if not request.user.is_authenticated %}
+                <a class="btn btn-outline-dark" href="{% url 'Login' %}" role="button">登入 &#187;</a>
+                {% else %}
+                <a class="nav-link active">
+                    你好，{{ request.user.username }}
+                    <a class="btn btn-outline-dark" href="{% url 'Logout' %}" role="button">登出 &#187;</a>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <!-- Header-->
+    <header class="bg-dark py-5">
+        <div class="container px-4 px-lg-5 my-5">
+            <div class="text-center text-white">
+                <h1 class="display-4 fw-bolder">
+                    <img src="{% static 'Logo_white.png' %}" height="100px" width="100px">
+                    您的交易資訊
+                </h1>
+                <p class="lead fw-normal text-white-50 mb-0">訂單明細</p>
+            </div>
+        </div>
+    </header>
+    <div class="container py-5">
+        <main>
+            {% if check_ok %}
+            <div class="row g-5">
+            <div class="col-md-5 col-lg-4 order-md-last">
+            <h4 class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-primary">訂單內容</span>
+            </h4>
+            <ul class="list-group mb-3">
+            {% for item in order_list %}
+            <li class="list-group-item d-flex justify-content-between lh-sm">
+            <div>
+              <h6 class="my-0">{{ item.product }}</h6>
+              <small class="text-muted">x {{ item.qty }}</small>
+            </div>
+            <span>${{ item.total_price }}元</span>
+            </li>
+            {% if forloop.last %}
+              <li class="list-group-item d-flex justify-content-between lh-sm">
+                <div>
+                  <h6 class="my-0">預估運費:</h6>
+                </div>
+                {% if transaction.delivery == "S" %}
+                <span>$60元</span>
+                {% elif transaction.delivery == "P" %}
+                <span>$80元</span>
+                {% elif transaction.delivery == "F" %}
+                <span>$0元</span>
+                {% endif %}
+              </li>
+            {% endif %}
+            {% endfor %}
+
+            <li class="list-group-item d-flex justify-content-between">
+            <span>總計，含運費 (TWD)</span>
+            <strong>{{ transaction.total_payment }}元</strong>
+            </li>
+            </ul>
+            </div>
+
+            <div class="col-md-7 col-lg-8">
+            <div class='row'>
+            <div class='col-sm-12'>
+            <h4 class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-primary">訂單詳細資訊</span>
+            </h4>
+            <div class='panel panel-info'>
+
+                <div><a> 訂單編號: {{ transaction.OrderID }}</a></div>
+                <div><a> 顧客姓名: {{ customers.customer }}</a></div>
+                <div><a> 電子信箱: {{ customers.email }}</a></div>
+                <div><a> 電話: {{ customers.tel }}</a></div>
+                <div><a> 付款方式: {{ transaction.get_payment_display }}</a></div>
+                <div><a> 運送方式: {{ transaction.get_delivery_display }}</a></div>
+                <div><a> 運送地址: {{ transaction.address }}</a></div>
+                <div><a> 備註: {{ transaction.comment }}</a></div>
+                <div><a> 總付款(預估，含運費): TWD{{ transaction.total_payment }}</a></div>
+                <div><a> 交易日期: {{ transaction.deal_date }}</a></div>
+            </div>
+            </div>
+            <div class="px-5 py-5">
+                <a class='btn btn-outline-dark mt-auto' id="complete_transaction" href='/'>
+                完成訂購，回首頁
+                </a>
+            </div>
+
+            {% else %}
+            <div class="px-5 py-5">
+                <a class='btn btn-warning' id="failed_transaction" href='/'>
+                    交易失敗，回首頁
+                </a>
+            </div>
+            {% endif %}
+            </div>
+            </div>
+            </section>
+            </div>
+        </main>
+    </div>
+    </section>
+        <!-- Footer-->
+        <footer class="py-5 bg-dark" style="bottom:0; left: 0; right: 0;">
+            <div class="container"><p class="m-0 text-center text-white">Template from https://startbootstrap.com/template/shop-item</p></div>
+        </footer>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script>
+            $(document).ready(function(){
+                $("#complete_transaction").click(function(){
+                     alert("訂購完成，請等待後續聯絡，回到首頁");
+                });
+            });
+        </script>
+        <script>
+            $(document).ready(function(){
+                $("#failed_transaction").click(function(){
+                    alert("抱歉，訂購失敗，請重新執行購買步驟");
+                });
+            });
+        </script>
+    </body>
+</html>
