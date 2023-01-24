@@ -1,30 +1,35 @@
 import requests
+import datetime
+import os
+import pandas as pd
+
+from django.core.cache import cache
 from django.shortcuts import render, get_object_or_404, HttpResponse, redirect, HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-
 # https://www.learncodewithmike.com/2020/05/django-send-email.html
 from django.core.mail import EmailMessage
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.template.loader import render_to_string
-
-from .token import Token
 from django.contrib import messages
 
+from .token import Token
 from .models import MomPlantModel, ChildPlantModel, ChildImageModel, CustomerModel, TransactionModel, OrderModel, Account
 from .forms import CustomerModelForm, TranscationModelForm, RegisterModelForm, LoginModelForm
-import datetime
-import os
-import pandas as pd
+
 
 # Create your views here.
 def index(request):
-    plant = MomPlantModel.objects
+
+    plant_obj = cache.get("mon_plant")
+
+    if not plant_obj:
+        plant_obj = MomPlantModel.objects.all()
 
     context = {
-        'plant_object': plant,
+        'plant_object': plant_obj,
         # "Cart_nums": num
     }
     return render(request, 'index.html', context)
@@ -106,7 +111,7 @@ def Update_cart(request, product):
 # https://stackoverflow.com/questions/64915167/how-do-i-use-a-django-url-inside-of-an-option-tag-in-a-dropdown-menu
 def get_cart(request):
     context = {}
-    return render(request, 'shopping/cart.html', context)
+    return render(request, 'shopping/cart_app.html', context)
 
 # @login_required(login_url="Login")
 def order_page(request):
