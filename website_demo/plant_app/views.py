@@ -111,7 +111,7 @@ def Update_cart(request, product):
 # https://stackoverflow.com/questions/64915167/how-do-i-use-a-django-url-inside-of-an-option-tag-in-a-dropdown-menu
 def get_cart(request):
     context = {}
-    return render(request, 'shopping/cart_app.html', context)
+    return render(request, 'shopping/cart_api.html', context)
 
 # @login_required(login_url="Login")
 def order_page(request):
