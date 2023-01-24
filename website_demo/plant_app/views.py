@@ -24,6 +24,7 @@ from .forms import CustomerModelForm, TranscationModelForm, RegisterModelForm, L
 def index(request):
 
     plant_obj = cache.get("mon_plant")
+    print(request.session)
 
     if not plant_obj:
         plant_obj = MomPlantModel.objects.all()

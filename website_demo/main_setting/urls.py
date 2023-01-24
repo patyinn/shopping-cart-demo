@@ -24,7 +24,10 @@ urlpatterns = [
     path('', include('plant_app.urls')),
     path('cart/', include('cart_api.urls')),
     # django-allauth 網址
-    path('accounts/', include('allauth.urls'))
+    path('accounts/', include('allauth.urls')),
+
+    # debug toolbar
+    path('__debug__/', include('debug_toolbar.urls')),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
