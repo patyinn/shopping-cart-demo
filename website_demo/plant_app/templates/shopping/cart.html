@@ -105,51 +105,48 @@
                     <div class='listgroup'>
                         <div class='listgroup-item'>
                             <tr>
-                                {% load multifor %}
-                                {% for q in inv_list; img in image_list %}
-                                {% if forloop.counter == forloop.parentloop.counter %}
-                                    <td align=center valign="middle">
-                                        <a href="{% url 'plant_page' item.product.name %}" style="text-decoration:none; color:black;">
-                                            {{ item.product.name }}
-                                        </a>
-                                    </td>
-                                    <td align=center valign="middle">
-                                        <img src="{{ img.url }}"  class="img-thumbnail">
-                                    </td>
-                                    {% if item.product.sale_price %}
-                                    <td align=center valign="middle">
-                                        <p class="text-muted text-decoration-line-through">
-                                            NT${{ item.product.price }}
-                                        </p>
-                                        <p>NT${{ item.product.sale_price }}</p>
-                                    </td>
-                                    {% else %}
-                                    <td align=center valign="middle">NT${{ item.product.price }}</td>
-                                    {% endif %}
-                                    <td align=center valign="middle">
-                                      <form action="{% url 'update_cart' item.product.name %}" method="post">
-                                        {% csrf_token %}
-                                        <select name="qty" onchange="this.form.submit()">
-                                          {% for n in q %}
-                                            {% if n == item.quantity %}
-                                                <option value={{n}} selected="selected">{{ n }}</option>
-                                            {% else %}
-                                                <option value={{n}}>{{ n }}</option>
-                                            {% endif %}
-                                          {% endfor %}
-                                        </select>
-                                          <input type="hidden" name="update">
-                                      </form>
-                                    </td>
-
-                                    <td align=center valign="middle">NT${{ item.total_price }}</td>
-                                    <td align=center valign="middle">
-                                    <a class="btn btn-outline-dark" href='{% url "remove_cart" item.product.name %}'>
-                                        刪除
+                            {% for item in cart_obj %}
+                                <td align=center valign="middle">
+                                    <a href="{% url 'plant_page' item.product.name %}" style="text-decoration:none; color:black;">
+                                        {{ item.name }}
                                     </a>
-                                    </td>
+                                </td>
+                                <td align=center valign="middle">
+                                    <img src="{{ item.main_image }}"  class="img-thumbnail">
+                                </td>
+                                {% if item.product.sale_price %}
+                                <td align=center valign="middle">
+                                    <p class="text-muted text-decoration-line-through">
+                                        NT${{ item.price }}
+                                    </p>
+                                    <p>NT${{ item.sale_price }}</p>
+                                </td>
+                                {% else %}
+                                <td align=center valign="middle">NT${{ item.price }}</td>
                                 {% endif %}
-                                {% endfor %}
+                                <td align=center valign="middle">
+                                  <form action="{% url 'update_cart' item.name %}" method="post">
+                                    {% csrf_token %}
+                                    <select name="qty" onchange="this.form.submit()">
+                                      {% for n in q %}
+                                        {% if n == item.quantity %}
+                                            <option value={{n}} selected="selected">{{ n }}</option>
+                                        {% else %}
+                                            <option value={{n}}>{{ n }}</option>
+                                        {% endif %}
+                                      {% endfor %}
+                                    </select>
+                                      <input type="hidden" name="update">
+                                  </form>
+                                </td>
+
+                                <td align=center valign="middle">NT${{ item.total_price }}</td>
+                                <td align=center valign="middle">
+                                <a class="btn btn-outline-dark" href='{% url "remove_cart" item.product.name %}'>
+                                    刪除
+                                </a>
+                                </td>
+                            {% endfor %}
                             </tr>
                         </div>
                     </div>
