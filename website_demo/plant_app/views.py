@@ -1,6 +1,7 @@
 import requests
 import datetime
 import os
+import json
 import pandas as pd
 
 from django.core.cache import cache
@@ -18,20 +19,21 @@ from django.contrib import messages
 from .token import Token
 from .models import MomPlantModel, ChildPlantModel, ChildImageModel, CustomerModel, TransactionModel, OrderModel, Account
 from .forms import CustomerModelForm, TranscationModelForm, RegisterModelForm, LoginModelForm
-
+from cart_api.views import CartView
 
 # Create your views here.
 def index(request):
 
     plant_obj = cache.get("mon_plant")
-    print(request.session)
 
     if not plant_obj:
         plant_obj = MomPlantModel.objects.all()
 
+    cart_obj = json.loads(CartView.read_cart(request).content)
+
     context = {
         'plant_object': plant_obj,
-        # "Cart_nums": num
+        "Cart_nums": cart_obj["content"]["cart_amount"]
     }
     return render(request, 'index.html', context)
 
@@ -111,8 +113,11 @@ def Update_cart(request, product):
 
 # https://stackoverflow.com/questions/64915167/how-do-i-use-a-django-url-inside-of-an-option-tag-in-a-dropdown-menu
 def get_cart(request):
-    context = {}
-    return render(request, 'shopping/cart_api.html', context)
+    cart_obj = json.loads(CartView.read_cart(request).content)
+    context = {
+        "cart_obj": cart_obj
+    }
+    return render(request, 'shopping/cart.html', context)
 
 # @login_required(login_url="Login")
 def order_page(request):

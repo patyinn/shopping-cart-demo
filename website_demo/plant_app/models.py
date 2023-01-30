@@ -4,6 +4,10 @@ from phonenumber_field.modelfields import PhoneNumberField
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
 # Create your models here.
+def path(instance, filename):
+    return 'gallery/{0}/{1}'.format(instance.name, filename)
+
+
 class AccountManager(BaseUserManager):
     def create_user(self, email, telephone, name, password=None):
         if not email:
@@ -38,6 +42,7 @@ class Account(AbstractBaseUser):
     def has_module_perms(self, app_label):
         return self.is_admin
 
+
 class MomPlantModel(models.Model):
 
     mom = models.CharField(max_length=50, unique=True)
@@ -46,10 +51,11 @@ class MomPlantModel(models.Model):
     def __str__(self):
         return str(self.mom) if self.mom else ''
 
-def path(instance, filename):
-    return 'gallery/{0}/{1}'.format(instance.name, filename)
 
 class ChildPlantModel(models.Model):
+    class Status(models.TextChoices):
+        ITINERARY = 'I', "有庫存"
+        OUT_OF_STOCK = 'O', "無庫存"
 
     name = models.CharField(max_length=500, unique=True)
     description = models.CharField(max_length=500)
@@ -59,16 +65,14 @@ class ChildPlantModel(models.Model):
     main_image = models.ImageField(upload_to=path)
     category = models.ForeignKey("MomPlantModel", to_field="mom", on_delete=models.CASCADE,
                              blank=False, help_text="須從母株模型資料庫新增")
-    PRODUCT_STATUS = (
-        ('I', "有庫存"),
-        ('O', "無庫存")
-    )
-    status = models.CharField(max_length=1, choices=PRODUCT_STATUS, blank=True, default="I")
+
+    status = models.CharField(max_length=1, choices=Status.choices, blank=True, default="I")
 
     class Meta:
         ordering = ['name']
     def __str__(self):
         return str(self.name) if self.name else ''
+
 
 class ChildImageModel(models.Model):
     name = models.OneToOneField("ChildPlantModel", to_field="name", on_delete=models.CASCADE, blank=False)
@@ -83,6 +87,7 @@ class ChildImageModel(models.Model):
     def __str__(self):
         return str(self.name) if self.name else ''
 
+
 class CustomerModel(models.Model):
 
     customer = models.CharField(max_length=50, blank=False, null=False)
@@ -92,6 +97,7 @@ class CustomerModel(models.Model):
 
     def __str__(self):
         return str(self.customer) if self.customer else ''
+
 
 class TransactionModel(models.Model):
 
@@ -116,6 +122,7 @@ class TransactionModel(models.Model):
 
     def __str__(self):
         return str(self.OrderID) if self.OrderID else ''
+
 
 class OrderModel(models.Model):
     OrderID = models.ForeignKey(TransactionModel, to_field="OrderID", on_delete=models.CASCADE, blank=False)
