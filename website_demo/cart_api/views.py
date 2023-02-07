@@ -1,51 +1,114 @@
+import json
 from functools import wraps
+from pprint import pprint
 
-from django.http import HttpResponse, JsonResponse
-from django.views import View
-from django.views.decorators.http import require_http_methods
-from django.db.models import Q
+from django.http.response import JsonResponse
+from rest_framework.views import APIView
+from rest_framework.parsers import JSONParser
+from rest_framework import status
 
-from plant_app.models import ChildPlantModel
+from cart_api.models import UserModel, CartModel, ProductModel
+from cart_api.serializer import CartSerializer
 
-CART_ID = "CART_555"
 
 # Create your views here.
-class CartView(View):
+class CartList(APIView):
 
     def __process_data(func):
         @wraps(func)
         def wrap(request, *args, **kwargs):
-            s, m, c = func(request, *args, **kwargs)
-            content = {
-                "success": s,
-                "message": m,
-                "content": c,
-            }
-            return HttpResponse(JsonResponse(content))
+            content, status_code = func(request, *args, **kwargs)
+            return JsonResponse(content, status=status_code)
         return wrap
 
-    @classmethod
     @__process_data
-    def read_cart(cls, request):
-        cart_obj = request.session.get(CART_ID)
+    def get(self, request):
+        User = request.session.get("user")
+        cart_obj = CartModel.objects.filter(user=User).using("cart")
         if not cart_obj:
-            cart_obj = {
-                "cart_items": [],
-                "cart_price": 0,
-                "cart_amount": 0,
-            }
-
+            return (
+                {"message": "No data"},
+                status.HTTP_200_OK
+            )
+        cart_serializer = CartSerializer(cart_obj, many=True)
         return (
-            True,
-            "get cart content successfully",
-            cart_obj,
+            cart_serializer.data,
+            status.HTTP_200_OK
         )
 
 
-    @classmethod
-    @require_http_methods(["POST"])
     @__process_data
-    def update_cart(cls, request):
+    def post(self, request, format=None):
+        cart_data = json.loads(json.dumps(request.POST))
+        user = UserModel.objects.using("cart").get(username=request.POST["user"])
+        pprint(user.token)
+
+        cart_data["user_username"] = user.username
+        cart_data["user_token"] = user.token
+
+        try:
+            product_obj = ProductModel.objects.using("cart").get(
+                product_id=cart_data["product_id"],
+                class_name=cart_data["product_class_name"],
+                app_name=cart_data["product_app_name"],
+            )
+        except ProductModel.DoesNotExist:
+            product_value = {
+                "product_id": cart_data["product_id"],
+                "product_name": cart_data["product_name"],
+                "price": cart_data["product_price"],
+                "sale_price": cart_data["product_sale_price"],
+                "inventory": cart_data["product_inventory"],
+                "class_name": cart_data["product_class_name"],
+                "app_name": cart_data["product_app_name"],
+            }
+            product_obj = ProductModel(**product_value)
+            product_obj.save()
+
+        cart_data["product"] = str(product_obj.id)
+
+        cart_obj = CartModel.objects.using("cart").filter(user=user)
+        cart_item_list = [obj for obj in cart_obj]
+        cart_serializer = CartSerializer(cart_obj, data=cart_data)
+        print(cart_serializer)
+        print(cart_serializer.is_valid())
+        print(cart_serializer.errors)
+        if cart_serializer.is_valid():
+            cart_serializer.save()
+            #
+            # cart_value = cart_values[0]
+            # qty = qty if cart_value["inventory"] >= qty else cart_value["inventory"]
+            # cart_value["qty"] = qty
+            # price = cart_value["sale_price"] if cart_value["sale_price"] else cart_value["price"]
+            # cart_value["total_price"] = int(cart_value["qty"]) * price
+            #
+            # if not cart_obj:
+            #     request.session[CART_ID] = {
+            #         "cart_items": [cart_value],
+            #         "cart_price": cart_value["total_price"],
+            #         "cart_amount": 1,
+            #     }
+            # else:
+            #     request.session[CART_ID]["cart_items"].append(cart_value)
+            #     request.session[CART_ID]["cart_amount"] = len(request.session[CART_ID]["cart_items"])
+            #     request.session[CART_ID]["total_price"] += cart_value["total_price"]
+            #
+            # request.session.modified = True
+
+            return (
+                cart_serializer.data,
+                status.HTTP_201_CREATED
+            )
+        else:
+            return (
+                cart_serializer.data,
+                status.HTTP_400_BAD_REQUEST
+            )
+
+
+
+    @__process_data
+    def update(cls, request):
         cart_obj = request.session.get(CART_ID)
         if not cart_obj:
             return (
@@ -82,52 +145,7 @@ class CartView(View):
 
 
 
-    @classmethod
-    @require_http_methods(["POST"])
-    @__process_data
-    def add_cart(cls, request):
-        cart_obj = request.session.get(CART_ID)
 
-        id = request.POST.get("merchandise_id")
-        qty = request.POST.get("qty")
-        cart_values = ChildPlantModel.objects\
-            .filter(Q(id=id) & Q(status=ChildPlantModel.Status.ITINERARY)).values()
-
-        if cart_values:
-            cart_value = cart_values[0]
-            qty = qty if cart_value["inventory"] >= qty else cart_value["inventory"]
-            cart_value["qty"] = qty
-            price = cart_value["sale_price"] if cart_value["sale_price"] else cart_value["price"]
-            cart_value["total_price"] = int(cart_value["qty"]) * price
-
-            if not cart_obj:
-                request.session[CART_ID] = {
-                    "cart_items": [cart_value],
-                    "cart_price": cart_value["total_price"],
-                    "cart_amount": 1,
-                }
-            else:
-                request.session[CART_ID]["cart_items"].append(cart_value)
-                request.session[CART_ID]["cart_amount"] = len(request.session[CART_ID]["cart_items"])
-                request.session[CART_ID]["total_price"] += cart_value["total_price"]
-
-            request.session.modified = True
-
-            return (
-                True,
-                "append {}, qty: {} into cart".format(cart_value["name"], qty),
-                "",
-            )
-        else:
-            return (
-                False,
-                "missing product in db!",
-                "",
-            )
-
-
-    @classmethod
-    @require_http_methods(["POST"])
     @__process_data
     def remove_cart(cls, request):
         cart_obj = request.session.get(CART_ID)

@@ -74,6 +74,13 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ]
+}
+
 # Provider specific settings
 SOCIALACCOUNT_PROVIDERS = {
      'facebook':
@@ -155,11 +162,15 @@ WSGI_APPLICATION = 'main_setting.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'plantDB',
+        'NAME': 'plantdb',
         'USER': 'root',
         'PASSWORD': 'bpxu31p4204',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+    },
+    'cart': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'cartdb',
+        'USER': 'cart_user',
+        'PASSWORD': 'bpxu31p4204',
     }
 }
 
