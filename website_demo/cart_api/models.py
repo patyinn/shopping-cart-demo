@@ -17,7 +17,7 @@ class CartModel(models.Model):
     valid = models.BooleanField("是否有效", default=True, )
     created_date = models.DateTimeField("創建日期", auto_now_add=True)
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         UserModel,
         on_delete=models.CASCADE,
         related_name="user_related",

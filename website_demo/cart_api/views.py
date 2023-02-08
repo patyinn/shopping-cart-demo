@@ -18,13 +18,13 @@ class CartList(APIView):
         @wraps(func)
         def wrap(request, *args, **kwargs):
             content, status_code = func(request, *args, **kwargs)
-            return JsonResponse(content, status=status_code)
+            return JsonResponse(content, status=status_code, safe=False)
         return wrap
 
     @__process_data
     def get(self, request):
-        User = request.session.get("user")
-        cart_obj = CartModel.objects.filter(user=User).using("cart")
+        user = UserModel.objects.get(username="user001")
+        cart_obj = CartModel.objects.filter(user=user)
         if not cart_obj:
             return (
                 {"message": "No data"},
@@ -40,14 +40,12 @@ class CartList(APIView):
     @__process_data
     def post(self, request, format=None):
         cart_data = json.loads(json.dumps(request.POST))
-        user = UserModel.objects.using("cart").get(username=request.POST["user"])
-        pprint(user.token)
+        user = UserModel.objects.get(username=request.POST["user"])
 
-        cart_data["user_username"] = user.username
-        cart_data["user_token"] = user.token
+        cart_data["user"] = user.token
 
         try:
-            product_obj = ProductModel.objects.using("cart").get(
+            product_obj = ProductModel.objects.get(
                 product_id=cart_data["product_id"],
                 class_name=cart_data["product_class_name"],
                 app_name=cart_data["product_app_name"],
@@ -66,13 +64,13 @@ class CartList(APIView):
             product_obj.save()
 
         cart_data["product"] = str(product_obj.id)
-
-        cart_obj = CartModel.objects.using("cart").filter(user=user)
+        cart_obj = CartModel.objects.filter(user=user)
         cart_item_list = [obj for obj in cart_obj]
-        cart_serializer = CartSerializer(cart_obj, data=cart_data)
-        print(cart_serializer)
+        cart_serializer = CartSerializer(data=cart_data)
         print(cart_serializer.is_valid())
+        print(cart_serializer.validated_data)
         print(cart_serializer.errors)
+
         if cart_serializer.is_valid():
             cart_serializer.save()
             #

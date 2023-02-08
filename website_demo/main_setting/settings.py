@@ -166,13 +166,15 @@ DATABASES = {
         'USER': 'root',
         'PASSWORD': 'bpxu31p4204',
     },
-    'cart': {
+    'cart_db': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'cartdb',
         'USER': 'cart_user',
         'PASSWORD': 'bpxu31p4204',
     }
 }
+
+DATABASE_ROUTERS = ['cart_api.router.CartRouter']
 
 # Django cache and session setup
 # https://redis.io/docs/getting-started/installation/install-redis-on-windows/
