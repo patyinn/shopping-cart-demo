@@ -5,7 +5,7 @@ from cart_api import views
 
 urlpatterns = [
     path('cart/', views.CartList.as_view(), name='CartList'),
-    # path('cart/<int:pk>', views.CartDetail.as_view(), name='CartDetail'),
+    path('cart/<int:pk>', views.CartDetail.as_view(), name='CartDetail'),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
