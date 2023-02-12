@@ -7,9 +7,12 @@ from cart_api.protocol import Merchandise
 # Create your models here.
 class UserModel(models.Model):
     username = models.CharField(max_length=30, null=False)
-    token = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    token = models.UUIDField(default=uuid.uuid4, editable=False)
     created_date = models.DateTimeField(auto_now_add=True)
     latest_activate_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("username", "token")
 
 
 class CartModel(models.Model):
@@ -48,5 +51,9 @@ class ProductModel(models.Model):
 
     created_date = models.DateTimeField(auto_now_add=True)
     latest_update_date = models.DateTimeField(auto_now=True)
+
+
+    class Meta:
+        unique_together = ("product_id", "class_name", "app_name")
 
 

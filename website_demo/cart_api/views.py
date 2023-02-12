@@ -31,6 +31,7 @@ class CartList(APIView):
                 status.HTTP_200_OK
             )
         cart_serializer = CartSerializer(cart_obj, many=True)
+        print(cart_serializer)
         return (
             cart_serializer.data,
             status.HTTP_200_OK
@@ -40,58 +41,27 @@ class CartList(APIView):
     @__process_data
     def post(self, request, format=None):
         cart_data = json.loads(json.dumps(request.POST))
-        user = UserModel.objects.get(username=request.POST["user"])
 
-        cart_data["user"] = user.token
+        sorted_product = {
+            "product_id": cart_data["product_id"],
+            "product_name": cart_data["product_name"],
+            "price": cart_data["product_price"],
+            "inventory": cart_data["product_inventory"],
+            "class_name": cart_data["product_class_name"],
+            "app_name": cart_data["product_app_name"],
+    }
 
-        try:
-            product_obj = ProductModel.objects.get(
-                product_id=cart_data["product_id"],
-                class_name=cart_data["product_class_name"],
-                app_name=cart_data["product_app_name"],
-            )
-        except ProductModel.DoesNotExist:
-            product_value = {
-                "product_id": cart_data["product_id"],
-                "product_name": cart_data["product_name"],
-                "price": cart_data["product_price"],
-                "sale_price": cart_data["product_sale_price"],
-                "inventory": cart_data["product_inventory"],
-                "class_name": cart_data["product_class_name"],
-                "app_name": cart_data["product_app_name"],
-            }
-            product_obj = ProductModel(**product_value)
-            product_obj.save()
+        if cart_data.get("product_sale_price"):
+            sorted_product["sale_price"] = cart_data["product_sale_price"]
 
-        cart_data["product"] = str(product_obj.id)
-        cart_obj = CartModel.objects.filter(user=user)
-        cart_item_list = [obj for obj in cart_obj]
+        cart_data["product"] = sorted_product
         cart_serializer = CartSerializer(data=cart_data)
+        print(cart_data)
         print(cart_serializer.is_valid())
-        print(cart_serializer.validated_data)
         print(cart_serializer.errors)
 
         if cart_serializer.is_valid():
             cart_serializer.save()
-            #
-            # cart_value = cart_values[0]
-            # qty = qty if cart_value["inventory"] >= qty else cart_value["inventory"]
-            # cart_value["qty"] = qty
-            # price = cart_value["sale_price"] if cart_value["sale_price"] else cart_value["price"]
-            # cart_value["total_price"] = int(cart_value["qty"]) * price
-            #
-            # if not cart_obj:
-            #     request.session[CART_ID] = {
-            #         "cart_items": [cart_value],
-            #         "cart_price": cart_value["total_price"],
-            #         "cart_amount": 1,
-            #     }
-            # else:
-            #     request.session[CART_ID]["cart_items"].append(cart_value)
-            #     request.session[CART_ID]["cart_amount"] = len(request.session[CART_ID]["cart_items"])
-            #     request.session[CART_ID]["total_price"] += cart_value["total_price"]
-            #
-            # request.session.modified = True
 
             return (
                 cart_serializer.data,
