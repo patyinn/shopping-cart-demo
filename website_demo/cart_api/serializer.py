@@ -19,7 +19,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     product = ProductSerializer(many=False)
-    user = serializers.CharField(source="user.username", )
+    user = serializers.PrimaryKeyRelatedField(queryset=UserModel.objects.all())
 
     class Meta:
         model = CartModel
@@ -31,9 +31,10 @@ class CartSerializer(serializers.ModelSerializer):
         )
 
     def save(self):
-        user_info = self.validated_data.pop("user")
+        user_obj = self.validated_data.get("user")
+        print(user_obj)
+        print(user_obj.id)
         product_info = self.validated_data.pop("product")
-        user_obj = UserModel.objects.get(username=user_info["username"])
 
         try:
             product_obj = ProductModel.objects.get(
@@ -46,14 +47,17 @@ class CartSerializer(serializers.ModelSerializer):
                 product_obj.sale_price = product_info["sale_price"]
             product_obj.inventory = product_info["inventory"]
             product_obj.save()
+            self.validated_data["product"] = product_obj
 
             exist_cart_obj = CartModel.objects.filter(
-                user=user_obj.pk,
+                user=user_obj,
                 product=product_obj
             )
             if exist_cart_obj:
                 exist_cart_obj = exist_cart_obj[0]
                 self.validated_data["quantity"] += int(exist_cart_obj.quantity)
+                if self.validated_data["quantity"] > product_obj.inventory:
+                    self.validated_data["quantity"] = int(product_obj.inventory)
                 self.instance = exist_cart_obj
 
         except ProductModel.DoesNotExist:
@@ -61,7 +65,6 @@ class CartSerializer(serializers.ModelSerializer):
             product_obj.save()
 
             self.validated_data["product"] = product_obj
-            self.validated_data["user"] = user_obj
 
         super().save()
 

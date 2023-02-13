@@ -53,7 +53,4 @@ class ProductModel(models.Model):
     latest_update_date = models.DateTimeField(auto_now=True)
 
 
-    class Meta:
-        unique_together = ("product_id", "class_name", "app_name")
-
 
