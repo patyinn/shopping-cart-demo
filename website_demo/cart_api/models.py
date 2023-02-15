@@ -12,7 +12,7 @@ class UserModel(models.Model):
     latest_activate_date = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ("username", "token")
+        unique_together = (("username", "token", ), )
 
 
 class CartModel(models.Model):
@@ -40,7 +40,7 @@ class ProductModel(models.Model):
         ITINERARY = 'I', "有庫存"
         OUT_OF_STOCK = 'O', "無庫存"
 
-    product_id = models.PositiveSmallIntegerField("產品編碼", default=1)
+    product_id = models.CharField("產品編碼", max_length=30)
     product_name = models.CharField("產品名稱", max_length=500)
     price = models.PositiveSmallIntegerField("價格", blank=False)
     sale_price = models.PositiveSmallIntegerField("特價價格", blank=True, null=True)
@@ -51,6 +51,9 @@ class ProductModel(models.Model):
 
     created_date = models.DateTimeField(auto_now_add=True)
     latest_update_date = models.DateTimeField(auto_now=True)
+
+    # class Meta:
+    #     unique_together = (("product_id", "class_name", "app_name", ),)
 
 
 

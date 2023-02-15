@@ -24,47 +24,51 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartModel
         fields = (
+            "id",
             "product",
             "user",
             "quantity",
             "valid",
         )
+        read_only_fields = ['id']
 
     def save(self):
         user_obj = self.validated_data.get("user")
-        print(user_obj)
-        print(user_obj.id)
         product_info = self.validated_data.pop("product")
 
-        try:
-            product_obj = ProductModel.objects.get(
-                product_id=product_info["product_id"],
-                class_name=product_info["class_name"],
-                app_name=product_info["app_name"],
-            )
-            product_obj.price = product_info["price"]
-            if product_info.get("sale_price"):
-                product_obj.sale_price = product_info["sale_price"]
-            product_obj.inventory = product_info["inventory"]
-            product_obj.save()
-            self.validated_data["product"] = product_obj
+        if not self.instance:
+            try:
+                product_obj = ProductModel.objects.get(
+                    product_id=product_info["product_id"],
+                    class_name=product_info["class_name"],
+                    app_name=product_info["app_name"],
+                )
+                self.validated_data["product"] = product_obj
 
-            exist_cart_obj = CartModel.objects.filter(
-                user=user_obj,
-                product=product_obj
-            )
-            if exist_cart_obj:
-                exist_cart_obj = exist_cart_obj[0]
-                self.validated_data["quantity"] += int(exist_cart_obj.quantity)
-                if self.validated_data["quantity"] > product_obj.inventory:
-                    self.validated_data["quantity"] = int(product_obj.inventory)
-                self.instance = exist_cart_obj
+                exist_cart_obj = CartModel.objects.filter(
+                    user=user_obj,
+                    product=product_obj
+                )
+                inventory = int(product_obj.inventory)
+                if exist_cart_obj:
+                    exist_cart_obj = exist_cart_obj[0]
+                    self.validated_data["quantity"] += int(exist_cart_obj.quantity)
+                    if self.validated_data["quantity"] > product_obj.inventory:
+                        self.validated_data["quantity"] = int(product_obj.inventory)
+                    self.instance = exist_cart_obj
+            except ProductModel.DoesNotExist:
+                product_obj = ProductModel(**product_info)
+                product_obj.save()
 
-        except ProductModel.DoesNotExist:
-            product_obj = ProductModel(**product_info)
-            product_obj.save()
-
-            self.validated_data["product"] = product_obj
+                inventory = product_obj.inventory
+                self.validated_data["product"] = product_obj
+        else:
+            if self.validated_data["quantity"] > int(product_info["inventory"]):
+                self.validated_data["quantity"] = int(product_info["inventory"])
+                inventory = int(product_info["inventory"])
+        if inventory == 0:
+            self.validated_data["quantity"] = 0
+            self.validated_data["valid"] = False
 
         super().save()
 
