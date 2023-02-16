@@ -6,13 +6,17 @@ from cart_api.protocol import Merchandise
 
 # Create your models here.
 class UserModel(models.Model):
-    username = models.CharField(max_length=30, null=False)
-    token = models.UUIDField(default=uuid.uuid4, editable=False)
-    created_date = models.DateTimeField(auto_now_add=True)
-    latest_activate_date = models.DateTimeField(auto_now=True)
+    username = models.CharField("使用者帳號", max_length=30, null=False)
+    token = models.UUIDField("token", default=uuid.uuid4, editable=False)
+    is_auth = models.BooleanField("是否為會員", default=False)
+    created_date = models.DateTimeField("創建日期", auto_now_add=True)
+    latest_activate_date = models.DateTimeField("最後活躍時間", auto_now=True)
 
     class Meta:
-        unique_together = (("username", "token", ), )
+        unique_together = (
+            ("username", "token", ),
+            ("username", "is_auth",),
+        )
 
 
 class CartModel(models.Model):
