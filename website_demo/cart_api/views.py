@@ -3,10 +3,14 @@ from functools import wraps
 from pprint import pprint
 
 from django.http.response import JsonResponse
+
+from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
 from rest_framework import status
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 from cart_api.models import UserModel, CartModel, ProductModel
 from cart_api.serializer import CartSerializer, ProductSerializer
@@ -14,14 +18,17 @@ from cart_api.serializer import CartSerializer, ProductSerializer
 
 def _process_data(func):
     @wraps(func)
-    def wrap(request, *args, **kwargs):
+    def wrap(*args, **kwargs):
+        req = [a for a in args if isinstance(a, Request)][0]
         user_obj = UserModel.objects.get(username="user001")
-        content, status_code = func(request, user_obj=user_obj, *args, **kwargs)
+        content, status_code = func(user_obj=user_obj, *args, **kwargs)
         return JsonResponse(content, status=status_code, safe=False)
     return wrap
 
 # Create your views here.
 class CartList(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+
     @_process_data
     def get(self, request, **kwargs):
         user_obj = kwargs.get("user_obj")
@@ -74,6 +81,8 @@ class CartList(APIView):
 
 
 class CartDetail(APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+
     @_process_data
     def get(self, request, entry_id, **kwargs):
         user_obj = kwargs.get("user_obj")
