@@ -1,8 +1,12 @@
+import datetime
 import json
 from functools import wraps
+import uuid
 from pprint import pprint
 
 from django.http.response import JsonResponse
+from django.conf import settings
+from django.utils.timezone import make_aware
 
 from rest_framework.request import Request
 from rest_framework.views import APIView
@@ -19,10 +23,59 @@ from cart_api.serializer import CartSerializer, ProductSerializer
 def _process_data(func):
     @wraps(func)
     def wrap(*args, **kwargs):
-        req = [a for a in args if isinstance(a, Request)][0]
-        user_obj = UserModel.objects.get(username="user001")
+        request = args[-1]
+        if not isinstance(request, Request):
+            return JsonResponse(
+                {
+                    "message": "user not found"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                safe=False
+            )
+
+        if request.user.is_authenticated:
+            user_obj, created = UserModel.objects.get_or_create(
+                username=request.user,
+                is_auth=True,
+                default={"token": uuid.uuid4()}
+            )
+        else:
+            username = request.COOKIES.get("cart_username")
+            cart_token = request.COOKIES.get(settings.CART_KEY)
+            # cart_token = request.session.get(settings.CART_KEY)
+            try:
+                user_obj = UserModel.objects.get(
+                    username=username,
+                    token=cart_token,
+                    is_auth=False,
+                )
+            except UserModel.DoesNotExist:
+                code = int(UserModel.objects.last().pk) + 1
+                user_obj = UserModel.objects.create(
+                    username=f"user{code}",
+                    token=uuid.uuid4(),
+                )
+
+        user_obj.latest_activate_date = make_aware(datetime.datetime.now())
+        user_obj.save()
+        # request.session[settings.CART_KEY] = user_obj.token
+        # request.session.modified = True
+
         content, status_code = func(user_obj=user_obj, *args, **kwargs)
-        return JsonResponse(content, status=status_code, safe=False)
+
+        response = JsonResponse(content, status=status_code, safe=False)
+        if not request.user.is_authenticated:
+            response.set_cookie(
+                "cart_username",
+                user_obj.username,
+                expires=datetime.datetime.now() + datetime.timedelta(days=30)
+            )
+            response.set_cookie(
+                settings.CART_KEY,
+                user_obj.token,
+                expires=datetime.datetime.now() + datetime.timedelta(days=30)
+            )
+        return response
     return wrap
 
 # Create your views here.

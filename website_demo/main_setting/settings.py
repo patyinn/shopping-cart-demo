@@ -62,6 +62,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',
 ]
 
+CART_KEY = "cart_api_token"
+
 # 為網站ID，自己定義
 # https://www.learncodewithmike.com/2020/04/django-allauth-google.html
 SITE_ID = 2
