@@ -22,7 +22,6 @@ class ProductSerializer(serializers.ModelSerializer):
                 product_id=validated_data["product_id"],
                 class_name=validated_data["class_name"],
                 app_name=validated_data["app_name"],
-                valid=True
             )
             raise serializers.ValidationError("The model has exist")
         except ProductModel.DoesNotExist:
@@ -57,7 +56,6 @@ class CartSerializer(serializers.ModelSerializer):
                     product_id=product_info["product_id"],
                     class_name=product_info["class_name"],
                     app_name=product_info["app_name"],
-                    valid=True
                 )
                 self.validated_data["product"] = product_obj
 

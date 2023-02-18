@@ -35,9 +35,9 @@ def _process_data(func):
 
         if request.user.is_authenticated:
             user_obj, created = UserModel.objects.get_or_create(
-                username=request.user,
+                username=request.user.username,
                 is_auth=True,
-                default={"token": uuid.uuid4()}
+                defaults={"token": uuid.uuid4()}
             )
         else:
             username = request.COOKIES.get("cart_username")
