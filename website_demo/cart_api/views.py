@@ -50,7 +50,8 @@ def _process_data(func):
                     is_auth=False,
                 )
             except UserModel.DoesNotExist:
-                code = int(UserModel.objects.last().pk) + 1
+                latest = UserModel.objects.last()
+                code = int(latest.pk) + 1 if latest else 0
                 user_obj = UserModel.objects.create(
                     username=f"user{code}",
                     token=uuid.uuid4(),
@@ -103,25 +104,27 @@ class CartList(APIView):
     def post(self, request, **kwargs):
         user_obj = kwargs.get("user_obj")
 
-        cart_data = json.loads(json.dumps(request.POST))
-        cart_data["user"] = user_obj.pk
+        product_serializer = ProductSerializer(data=request.data)
 
-        sorted_product = {
-            "product_id": cart_data["product_id"],
-            "product_name": cart_data["product_name"],
-            "price": cart_data["price"],
-            "inventory": cart_data["inventory"],
-            "class_name": cart_data["class_name"],
-            "app_name": cart_data["app_name"],
-            "sale_price": cart_data.get("sale_price", None)
+        if product_serializer.is_valid():
+            product_data = product_serializer.data
+        else:
+            return (
+                product_serializer.errors,
+                status.HTTP_400_BAD_REQUEST
+            )
+
+        cart_data = {
+            "user": user_obj.pk,
+            "product": product_data,
+            "quantity": request.POST.get("quantity"),
+            "valid": request.POST.get("valid")
         }
 
-        cart_data["product"] = sorted_product
         cart_serializer = CartSerializer(data=cart_data)
 
         if cart_serializer.is_valid():
             cart_serializer.save()
-
             return (
                 cart_serializer.data,
                 status.HTTP_201_CREATED
@@ -167,23 +170,24 @@ class CartDetail(APIView):
         try:
             cart_obj = CartModel.objects.get(pk=entry_id, user=user_obj)
 
-            cart_data = json.loads(json.dumps(request.POST))
-            cart_data["user"] = user_obj.pk
+            product_serializer = ProductSerializer(data=request.data)
 
-            sorted_product = {
-                "product_id": cart_obj.product.product_id,
-                "product_name": cart_obj.product.product_name,
-                "price": cart_obj.product.price,
-                "inventory": cart_obj.product.inventory,
-                "class_name": cart_obj.product.class_name,
-                "app_name": cart_obj.product.app_name,
+            if product_serializer.is_valid():
+                product_data = product_serializer.data
+            else:
+                return (
+                    product_serializer.errors,
+                    status.HTTP_400_BAD_REQUEST
+                )
+
+            cart_data = {
+                "user": user_obj.pk,
+                "product": product_data,
+                "quantity": request.POST.get("quantity"),
+                "valid": request.POST.get("valid")
             }
-
-            if cart_obj.product.sale_price:
-                sorted_product["sale_price"] = cart_obj.product.sale_price
-            cart_data["product"] = sorted_product
-
             cart_serializer = CartSerializer(cart_obj, data=cart_data)
+
             if cart_serializer.is_valid():
                 cart_serializer.save()
                 return (

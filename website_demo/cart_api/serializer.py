@@ -16,6 +16,21 @@ class ProductSerializer(serializers.ModelSerializer):
             "app_name",
         )
 
+    def create(self, validated_data):
+        try:
+            ProductModel.objects.get(
+                product_id=validated_data["product_id"],
+                class_name=validated_data["class_name"],
+                app_name=validated_data["app_name"],
+                valid=True
+            )
+            raise serializers.ValidationError("The model has exist")
+        except ProductModel.DoesNotExist:
+            return super().create()
+        except Exception as e:
+            raise serializers.ValidationError("error, message is {}".format(e))
+
+
 
 class CartSerializer(serializers.ModelSerializer):
     product = ProductSerializer(many=False)
@@ -42,6 +57,7 @@ class CartSerializer(serializers.ModelSerializer):
                     product_id=product_info["product_id"],
                     class_name=product_info["class_name"],
                     app_name=product_info["app_name"],
+                    valid=True
                 )
                 self.validated_data["product"] = product_obj
 
@@ -63,9 +79,10 @@ class CartSerializer(serializers.ModelSerializer):
                 inventory = product_obj.inventory
                 self.validated_data["product"] = product_obj
         else:
+            inventory = product_info["inventory"]
             if self.validated_data["quantity"] > int(product_info["inventory"]):
                 self.validated_data["quantity"] = int(product_info["inventory"])
-                inventory = int(product_info["inventory"])
+
         if inventory == 0:
             self.validated_data["quantity"] = 0
             self.validated_data["valid"] = False
