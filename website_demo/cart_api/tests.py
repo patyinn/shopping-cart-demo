@@ -18,6 +18,8 @@ from cart_api.views import (
 
 # Create your tests here.
 class WrapperTests(TestCase):
+    databases = "__all__"
+
     def setUp(self) -> None:
         @_process_data
         def mock_func(*args, **kwargs):
@@ -44,7 +46,7 @@ class WrapperTests(TestCase):
         request = RequestFactory()
         self.decorated_func(request)
 
-        self.assertEqual(UserModel.objects.last().username, "user1")
+        self.assertEqual(UserModel.objects.last(), "user1")
 
     def test_4_get_existed_user(self):
         class MockUser:

@@ -24,6 +24,7 @@ def _process_data(func):
     @wraps(func)
     def wrap(*args, **kwargs):
         request = args[-1] if args else ""
+        print(request.user)
         if not isinstance(request, Request):
             return JsonResponse(
                 {
@@ -51,12 +52,13 @@ def _process_data(func):
                 )
             except UserModel.DoesNotExist:
                 latest = UserModel.objects.last()
+
                 code = int(latest.pk) + 1 if latest else 0
                 user_obj = UserModel.objects.create(
                     username=f"user{code}",
                     token=uuid.uuid4(),
                 )
-
+        print(user_obj)
         user_obj.latest_activate_date = make_aware(datetime.datetime.now())
         user_obj.save()
         # request.session[settings.CART_KEY] = user_obj.token
