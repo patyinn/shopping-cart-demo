@@ -173,6 +173,9 @@ DATABASES = {
         'NAME': 'cartdb',
         'USER': 'cart_user',
         'PASSWORD': 'bpxu31p4204',
+        'TEST': {
+            'NAME': 'carttestdb',
+        },
     }
 }
 

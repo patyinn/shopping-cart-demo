@@ -23,7 +23,7 @@ from cart_api.serializer import CartSerializer, ProductSerializer
 def _process_data(func):
     @wraps(func)
     def wrap(*args, **kwargs):
-        request = args[-1]
+        request = args[-1] if args else ""
         if not isinstance(request, Request):
             return JsonResponse(
                 {

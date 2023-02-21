@@ -57,7 +57,7 @@ class ChildPlantModel(models.Model):
         ITINERARY = 'I', "有庫存"
         OUT_OF_STOCK = 'O', "無庫存"
 
-    name = models.CharField(max_length=500, unique=True)
+    name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=500)
     price = models.PositiveSmallIntegerField(blank=False)
     sale_price = models.PositiveSmallIntegerField(blank=True, null=True)
