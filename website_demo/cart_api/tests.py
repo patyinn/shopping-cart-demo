@@ -7,6 +7,7 @@ from unittest import mock
 from django.contrib.auth.models import AnonymousUser, User
 from django.test.client import RequestFactory
 from django.test import TestCase
+from django.conf import settings
 
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
@@ -43,14 +44,17 @@ class WrapperTests(TestCase):
         )
 
     def test_1_no_user(self):
+        request = self.factory.get('/')
+        response = self.decorated_func(request, "test")
+
         self.assertEqual(
-            json.loads(self.decorated_func().content),
+            json.loads(response.content),
             {
                 "message": "user not found"
             },
         )
         self.assertEqual(
-            self.decorated_func().status_code,
+            response.status_code,
             status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -58,9 +62,14 @@ class WrapperTests(TestCase):
         request = self.factory.get('/')
         request.user = AnonymousUser()
 
-        self.decorated_func(request)
+        response = self.decorated_func(request)
+        username_cookies = response.cookies["cart_username"].__dict__
+        token_cookies = response.cookies[settings.CART_KEY].__dict__
 
-        self.assertEqual(UserModel.objects.last().username, "user0")
+        latest = UserModel.objects.last()
+        self.assertEqual(latest.username, f"user{latest.pk}")
+        self.assertEqual(username_cookies["_value"], UserModel.objects.last().username)
+        self.assertEqual(token_cookies["_value"], str(UserModel.objects.last().token))
 
     def test_3_create_user_with_exist_user_db(self):
         UserModel.objects.create(
@@ -72,18 +81,88 @@ class WrapperTests(TestCase):
         request = self.factory.get('/')
         request.user = AnonymousUser()
 
-        self.decorated_func(request)
+        response = self.decorated_func(request)
+        username_cookies = response.cookies["cart_username"].__dict__
+        token_cookies = response.cookies[settings.CART_KEY].__dict__
 
-        self.assertEqual(UserModel.objects.last().username, "user2")
+        latest = UserModel.objects.last()
+        self.assertEqual(latest.username, f"user{latest.pk}")
+        self.assertEqual(username_cookies["_value"], UserModel.objects.last().username)
+        self.assertEqual(token_cookies["_value"], str(UserModel.objects.last().token))
 
-    def test_4_create_user_is_authenticated(self):
+    def test_4_get_existed_user(self):
+        token = uuid.uuid4()
+        UserModel.objects.create(
+            username="user11111",
+            token=token,
+            is_auth=False
+        )
+
+        request = self.factory.get('/')
+        request.user = AnonymousUser()
+        request.COOKIES["cart_username"] = "user11111"
+        request.COOKIES[settings.CART_KEY] = str(token)
+
+        response = self.decorated_func(request)
+        username_cookies = response.cookies["cart_username"].__dict__
+        token_cookies = response.cookies[settings.CART_KEY].__dict__
+
+        self.assertEqual(username_cookies["_value"], "user11111")
+        self.assertEqual(token_cookies["_value"], str(token))
+
+    def test_5_get_existed_user_bur_wrong_token(self):
+        token = uuid.uuid4()
+        UserModel.objects.create(
+            username="user11111",
+            token=token,
+            is_auth=False
+        )
+
+        request = self.factory.get('/')
+        request.user = AnonymousUser()
+        request.COOKIES["cart_username"] = "user11112"
+        request.COOKIES[settings.CART_KEY] = str(token)
+
+        response = self.decorated_func(request)
+        username_cookies = response.cookies["cart_username"].__dict__
+        token_cookies = response.cookies[settings.CART_KEY].__dict__
+
+        latest = UserModel.objects.last()
+        self.assertEqual(latest.username, f"user{latest.pk}")
+        self.assertEqual(username_cookies["_value"], UserModel.objects.last().username)
+        self.assertEqual(token_cookies["_value"], str(UserModel.objects.last().token))
+
+    def test_6_get_existed_user_bur_wrong_username(self):
+        token = uuid.uuid4()
+        UserModel.objects.create(
+            username="user11111",
+            token=token,
+            is_auth=False
+        )
+
+        request = self.factory.get('/')
+        request.user = AnonymousUser()
+        request.COOKIES["cart_username"] = "user11111"
+        request.COOKIES[settings.CART_KEY] = str(uuid.uuid4())
+
+        response = self.decorated_func(request)
+        username_cookies = response.cookies["cart_username"].__dict__
+        token_cookies = response.cookies[settings.CART_KEY].__dict__
+
+        latest = UserModel.objects.last()
+        self.assertEqual(latest.username, f"user{latest.pk}")
+        self.assertEqual(username_cookies["_value"], UserModel.objects.last().username)
+        self.assertEqual(token_cookies["_value"], str(UserModel.objects.last().token))
+
+    def test_7_create_user_is_authenticated(self):
         request = self.factory.get('/')
         force_authenticate(request, user=self.user)
-        self.decorated_func(request)
 
+        response = self.decorated_func(request)
         self.assertEqual(UserModel.objects.last().username, "jacob")
+        self.assertEqual(len(response.cookies), 0)
 
-    def test_5_get_user_is_authenticated(self):
+    def test_8_get_user_is_authenticated(self):
         token = uuid.uuid4()
         UserModel.objects.create(
             username=self.user.username,
@@ -93,20 +172,12 @@ class WrapperTests(TestCase):
 
         request = self.factory.get('/')
         force_authenticate(request, user=self.user)
-        self.decorated_func(request)
+        response = self.decorated_func(request)
 
         self.assertEqual(UserModel.objects.last().username, "jacob")
         self.assertEqual(UserModel.objects.last().token, token)
         self.assertEqual(UserModel.objects.last().is_auth, True)
-
-
-    def test_6_get_existed_user(self):
-        class MockUser:
-            is_active = True
-            is_staff = True
-
-            def has_perm(self, *args):
-                return True
+        self.assertEqual(len(response.cookies), 0)
 
 
 

@@ -73,7 +73,7 @@ def _process_data(func):
             )
             response.set_cookie(
                 settings.CART_KEY,
-                user_obj.token,
+                str(user_obj.token),
                 expires=datetime.datetime.now() + datetime.timedelta(days=30)
             )
         return response
