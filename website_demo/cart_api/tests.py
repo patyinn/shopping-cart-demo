@@ -4,9 +4,14 @@ import unittest
 
 from unittest import mock
 
+from django.contrib.auth.models import AnonymousUser, User
 from django.test.client import RequestFactory
 from django.test import TestCase
+
 from rest_framework import status
+from rest_framework.test import APIRequestFactory
+from rest_framework.decorators import api_view
+from rest_framework.test import force_authenticate
 
 from cart_api.models import UserModel, CartModel, ProductModel
 from cart_api.views import (
@@ -21,6 +26,7 @@ class WrapperTests(TestCase):
     databases = "__all__"
 
     def setUp(self) -> None:
+        @api_view(["GET"])
         @_process_data
         def mock_func(*args, **kwargs):
             return (
@@ -29,6 +35,12 @@ class WrapperTests(TestCase):
             )
 
         self.decorated_func = mock_func
+        self.factory = APIRequestFactory()
+        self.user = User.objects.create_user(
+            username='jacob',
+            email='jacob@…',
+            password='top_secret'
+        )
 
     def test_1_no_user(self):
         self.assertEqual(
@@ -42,13 +54,53 @@ class WrapperTests(TestCase):
             status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    def test_2_create_user_without_exist_user(self):
-        request = RequestFactory()
+    def test_2_create_user_without_exist_user_db(self):
+        request = self.factory.get('/')
+        request.user = AnonymousUser()
+
         self.decorated_func(request)
 
-        self.assertEqual(UserModel.objects.last(), "user1")
+        self.assertEqual(UserModel.objects.last().username, "user0")
 
-    def test_4_get_existed_user(self):
+    def test_3_create_user_with_exist_user_db(self):
+        UserModel.objects.create(
+            username="user11111",
+            token=uuid.uuid4(),
+            is_auth=False
+        )
+
+        request = self.factory.get('/')
+        request.user = AnonymousUser()
+
+        self.decorated_func(request)
+
+        self.assertEqual(UserModel.objects.last().username, "user2")
+
+    def test_4_create_user_is_authenticated(self):
+        request = self.factory.get('/')
+        force_authenticate(request, user=self.user)
+        self.decorated_func(request)
+
+        self.assertEqual(UserModel.objects.last().username, "jacob")
+
+    def test_5_get_user_is_authenticated(self):
+        token = uuid.uuid4()
+        UserModel.objects.create(
+            username=self.user.username,
+            token=token,
+            is_auth=True
+        )
+
+        request = self.factory.get('/')
+        force_authenticate(request, user=self.user)
+        self.decorated_func(request)
+
+        self.assertEqual(UserModel.objects.last().username, "jacob")
+        self.assertEqual(UserModel.objects.last().token, token)
+        self.assertEqual(UserModel.objects.last().is_auth, True)
+
+
+    def test_6_get_existed_user(self):
         class MockUser:
             is_active = True
             is_staff = True
