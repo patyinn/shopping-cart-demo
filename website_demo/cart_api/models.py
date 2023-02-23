@@ -48,7 +48,7 @@ class ProductModel(models.Model):
     product_name = models.CharField("產品名稱", max_length=500)
     price = models.PositiveSmallIntegerField("價格", blank=False)
     sale_price = models.PositiveSmallIntegerField("特價價格", blank=True, null=True)
-    inventory = models.PositiveSmallIntegerField("庫存", default=1)
+    inventory = models.PositiveSmallIntegerField("庫存", blank=False)
 
     class_name = models.CharField("類別名稱", max_length=50)
     app_name = models.CharField("APP名稱", max_length=50)

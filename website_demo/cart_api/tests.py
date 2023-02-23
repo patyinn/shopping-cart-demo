@@ -5,12 +5,11 @@ import unittest
 from unittest import mock
 
 from django.contrib.auth.models import AnonymousUser, User
-from django.test.client import RequestFactory
 from django.test import TestCase
 from django.conf import settings
 
 from rest_framework import status
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APIRequestFactory, APIClient
 from rest_framework.decorators import api_view
 from rest_framework.test import force_authenticate
 
@@ -180,102 +179,571 @@ class WrapperTests(TestCase):
         self.assertEqual(len(response.cookies), 0)
 
 
+class CartListTests(TestCase):
+    databases = "__all__"
 
-
-class CartOperationTests(TestCase):
     def setUp(self):
-        self.user_obj = UserModel.objects.create(
-            username="user11111",
-            token=uuid.uuid4,
-            is_auth=False
+        self.user = User.objects.create_user(
+            username='jacob',
+            email='jacob@…',
+            password='top_secret'
         )
+
+        self.user1_token = uuid.uuid4()
+        self.user1 = UserModel.objects.create(
+            username=self.user.username,
+            token=self.user1_token,
+            is_auth=True
+        )
+
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.anonymous_client = APIClient()
+
         self.product_obj1 = ProductModel.objects.create(
             product_id="1",
             product_name="產品A",
             price=1000,
             sale_price=500,
-            inventory=5,
-            class_name="product_model",
+            inventory=0,
+            class_name="plant_model",
             app_name="plant_app",
         )
         self.product_obj2 = ProductModel.objects.create(
             product_id="2",
             product_name="產品B",
             price=800,
-            inventory=5,
-            class_name="product_model",
+            inventory=7,
+            class_name="plant_model",
             app_name="plant_app",
         )
-        self.cart_obj1 = not CartModel.objects.create(
+        self.cart_obj1 = CartModel.objects.create(
             product=self.product_obj1,
-            user=self.user_obj,
-            quantuty=1,
+            user=self.user1,
+            quantity=1,
             valid=True
         )
-        self.cart_obj2 = not CartModel.objects.create(
+        self.cart_obj2 = CartModel.objects.create(
             product=self.product_obj2,
-            user=self.user_obj,
-            quantuty=1,
+            user=self.user1,
+            quantity=2,
             valid=True
         )
 
-    @mock.patch("thsrcholidays.utils.requests.post")
-    def test1_1_hotel_id(self, mock_post):
-        Product.objects.create(id=11, thsrc_product_id="0", name="TEST_和逸飯店．高雄中山館2日自由行_New", loc="12", days_length=3)
-        Hotel.objects.create(id=111, product_id=11, name="TEST_和逸飯店．高雄中山館", address="地址：80660高雄市前鎮區中山二路260號22-30樓")
+    def test_get_existed_data(self):
 
-        mock_post.return_value = mock.Mock(status=200, json=lambda **kwargs: self.hotel_api_res)
+        response = self.client.get("/api/cart/")
 
-        product_obj = Product.objects.get(id=11)
-        result = pmc.get_hotel_id(product_obj)
-
-        # ordering result by db_id
-        ordering = sorted([r["db_id"] for r in result])
-        result = [
+        expected_result = [
             {
-                "success": r["success"],
-                "res_id": r["res_id"],
-                "db_id": r["db_id"],
-            }
-            for o in ordering for r in result if o == r["db_id"]
-        ]
-        expexted_result = [
+                "id": 1,
+                "product": {
+                    "id": 1,
+                    "product_id": "1",
+                    "product_name": "產品A",
+                    "price": 1000,
+                    "sale_price": 500,
+                    "inventory": 0,
+                    "class_name": "plant_model",
+                    "app_name": "plant_app",
+                },
+                "user": 1,
+                "quantity": 1,
+                "valid": False,
+            },
             {
-                "success": True,
-                "res_id": "138",
-                "db_id": 111,
+                "id": 2,
+                "product": {
+                    "id": 2,
+                    "product_id": "2",
+                    "product_name": "產品B",
+                    "price": 800,
+                    'sale_price': None,
+                    "inventory": 7,
+                    "class_name": "plant_model",
+                    "app_name": "plant_app",
+                },
+                "user": 1,
+                "quantity": 2,
+                "valid": True,
             },
         ]
-        self.maxDiff = None
-        self.assertEqual(result, expexted_result)
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_get_empty_data(self):
 
-    def test1_1_wrapper_no_user(self):
+        response = self.anonymous_client.get("/api/cart/")
 
-        mock_post.return_value = mock.Mock(status=200, json=lambda **kwargs: self.hotel_api_res)
+        expected_result = {
+            "message": "No data"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        product_obj = Product.objects.get(id=11)
-        result = pmc.get_hotel_id(product_obj)
+    def test_post_new_product(self):
+        request_input = {
+            "product_id": "3",
+            "product_name": "產品C",
+            "price": 9000,
+            "sale_price": 5000,
+            "inventory": 1,
+            "class_name": "B_model",
+            "app_name": "B_app",
+            "quantity": 1,
+            "valid": True,
+        }
+        response = self.client.post("/api/cart/", request_input, json=request_input, format="json")
 
-        # ordering result by db_id
-        ordering = sorted([r["db_id"] for r in result])
-        result = [
-            {
-                "success": r["success"],
-                "res_id": r["res_id"],
-                "db_id": r["db_id"],
-            }
-            for o in ordering for r in result if o == r["db_id"]
-        ]
-        expexted_result = [
-            {
-                "success": True,
-                "res_id": "138",
-                "db_id": 111,
+        expected_result = {
+            "id": 3,
+            "product": {
+                "id": 3,
+                "product_id": "3",
+                "product_name": "產品C",
+                "price": 9000,
+                "sale_price": 5000,
+                "inventory": 1,
+                "class_name": "B_model",
+                "app_name": "B_app",
             },
-        ]
-        self.maxDiff = None
-        self.assertEqual(result, expexted_result)
+            "user": 1,
+            "quantity": 1,
+            "valid": True,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(ProductModel.objects.last().product_id, "3")
+
+    def test_post_product_exist(self):
+        request_input = {
+            "product_id": "2",
+            "product_name": "產品B",
+            "price": 1000,
+            "inventory": 7,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+            "quantity": 1,
+            "valid": True,
+        }
+        response = self.client.post("/api/cart/", request_input, json=request_input, format="json")
+
+        expected_result = {
+            "id": 2,
+            "product": {
+                "id": 2,
+                "product_id": "2",
+                "product_name": "產品B",
+                "price": 800,
+                'sale_price': None,
+                "inventory": 7,
+                "class_name": "plant_model",
+                "app_name": "plant_app",
+            },
+            "user": 1,
+            "quantity": 3,
+            "valid": True,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(ProductModel.objects.filter(product_id="2")), 1)
+
+    def test_post_product_exist(self):
+        request_input = {
+            "product_id": "2",
+            "product_name": "產品B",
+            "price": 1000,
+            "inventory": 7,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+            "quantity": 1,
+            "valid": True,
+        }
+        response = self.client.post("/api/cart/", request_input, json=request_input, format="json")
+
+        expected_result = {
+            "id": 2,
+            "product": {
+                "id": 2,
+                "product_id": "2",
+                "product_name": "產品B",
+                "price": 800,
+                'sale_price': None,
+                "inventory": 7,
+                "class_name": "plant_model",
+                "app_name": "plant_app",
+            },
+            "user": 1,
+            "quantity": 3,
+            "valid": True,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(ProductModel.objects.filter(product_id="2")), 1)
+
+    def test_post_product_quantity_max(self):
+        request_input = {
+            "product_id": "2",
+            "product_name": "產品B",
+            "price": 1000,
+            "inventory": 7,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+            "quantity": 10,
+            "valid": True,
+        }
+        response = self.client.post("/api/cart/", request_input, json=request_input, format="json")
+
+        expected_result = {
+            "id": 2,
+            "product": {
+                "id": 2,
+                "product_id": "2",
+                "product_name": "產品B",
+                "price": 800,
+                'sale_price': None,
+                "inventory": 7,
+                "class_name": "plant_model",
+                "app_name": "plant_app",
+            },
+            "user": 1,
+            "quantity": 7,
+            "valid": True,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(ProductModel.objects.filter(product_id="2")), 1)
+
+    def test_post_cart_lack_content(self):
+        request_input = {
+            "product_id": "2",
+            "product_name": "產品G",
+            "price": 5000,
+            "sale_price": 800,
+            "inventory": 4,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+            "valid": True,
+        }
+        response = self.client.post("/api/cart/", request_input, json=request_input, format="json")
+
+        expected_result = {
+            'quantity': ['This field may not be null.']
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_post_product_lack_content(self):
+        request_input = {
+            "valid": True,
+        }
+        response = self.client.post("/api/cart/", request_input, json=request_input, format="json")
+
+        expected_result = {
+            "product_id": ["這個欄位是必須的。"],
+            "product_name": ["這個欄位是必須的。"],
+            "price": ["這個欄位是必須的。"],
+            "inventory": ["這個欄位是必須的。"],
+            "class_name": ["這個欄位是必須的。"],
+            "app_name": ["這個欄位是必須的。"],
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class CartDetailTests(TestCase):
+    databases = "__all__"
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='jacob',
+            email='jacob@…',
+            password='top_secret'
+        )
+
+        self.user1_token = uuid.uuid4()
+        self.user1 = UserModel.objects.create(
+            username=self.user.username,
+            token=self.user1_token,
+            is_auth=True
+        )
+
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.anonymous_client = APIClient()
+
+        self.product_obj1 = ProductModel.objects.create(
+            product_id="1",
+            product_name="產品A",
+            price=1000,
+            sale_price=500,
+            inventory=0,
+            class_name="plant_model",
+            app_name="plant_app",
+        )
+        self.product_obj2 = ProductModel.objects.create(
+            product_id="2",
+            product_name="產品B",
+            price=800,
+            inventory=7,
+            class_name="plant_model",
+            app_name="plant_app",
+        )
+        self.cart_obj1 = CartModel.objects.create(
+            product=self.product_obj1,
+            user=self.user1,
+            quantity=1,
+            valid=True
+        )
+        self.cart_obj2 = CartModel.objects.create(
+            product=self.product_obj2,
+            user=self.user1,
+            quantity=2,
+            valid=True
+        )
+
+    def test_get_existed_data(self):
+        response = self.client.get("/api/cart/1")
+        expected_result = {
+            "id": 1,
+            "product": {
+                "id": 1,
+                "product_id": "1",
+                "product_name": "產品A",
+                "price": 1000,
+                "sale_price": 500,
+                "inventory": 0,
+                "class_name": "plant_model",
+                "app_name": "plant_app",
+            },
+            "user": 1,
+            "quantity": 1,
+            "valid": False,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_not_exist_data(self):
+        response = self.client.get("/api/cart/3")
+        expected_result = {
+            "message": "No such entry in cart"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_existed_product(self):
+        request_input = {
+            "product_id": "2",
+            "product_name": "產品B",
+            "price": 800,
+            "inventory": 7,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+            "quantity": 3,
+            "valid": True,
+        }
+        response = self.client.put("/api/cart/2", request_input, format="json")
+
+        expected_result = {
+            "id": 2,
+            "product": {
+                "id": 2,
+                "product_id": "2",
+                "product_name": "產品B",
+                "price": 800,
+                "sale_price": None,
+                "inventory": 7,
+                "class_name": "plant_model",
+                "app_name": "plant_app",
+            },
+            "user": 1,
+            "quantity": 3,
+            "valid": True,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_existed_product_diff(self):
+        request_input = {
+            "product_id": "2",
+            "product_name": "產品B",
+            "price": 8655,
+            "inventory": 4,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+            "quantity": 4,
+            "valid": True,
+        }
+        response = self.client.put("/api/cart/2", request_input, format="json")
+
+        expected_result = {
+            "id": 2,
+            "product": {
+                "id": 2,
+                "product_id": "2",
+                "product_name": "產品B",
+                "price": 800,
+                "sale_price": None,
+                "inventory": 7,
+                "class_name": "plant_model",
+                "app_name": "plant_app",
+            },
+            "user": 1,
+            "quantity": 4,
+            "valid": True,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_existed_product_max(self):
+        request_input = {
+            "product_id": "2",
+            "product_name": "產品B",
+            "price": 800,
+            "inventory": 7,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+            "quantity": 11,
+            "valid": True,
+        }
+        response = self.client.put("/api/cart/2", request_input, format="json")
+
+        expected_result = {
+            "id": 2,
+            "product": {
+                "id": 2,
+                "product_id": "2",
+                "product_name": "產品B",
+                "price": 800,
+                "sale_price": None,
+                "inventory": 7,
+                "class_name": "plant_model",
+                "app_name": "plant_app",
+            },
+            "user": 1,
+            "quantity": 7,
+            "valid": True,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_existed_product_zero(self):
+        request_input = {
+            "product_id": "2",
+            "product_name": "產品B",
+            "price": 800,
+            "inventory": 7,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+            "quantity": 0,
+            "valid": True,
+        }
+        response = self.client.put("/api/cart/2", request_input, format="json")
+
+        expected_result = {
+            "id": 2,
+            "product": {
+                "id": 2,
+                "product_id": "2",
+                "product_name": "產品B",
+                "price": 800,
+                "sale_price": None,
+                "inventory": 7,
+                "class_name": "plant_model",
+                "app_name": "plant_app",
+            },
+            "user": 1,
+            "quantity": 0,
+            "valid": False,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_not_exist_product(self):
+        request_input = {
+            "product_id": "8",
+            "product_name": "產品E",
+            "price": 400,
+            "inventory": 10,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+            "quantity": 4,
+            "valid": True,
+        }
+        response = self.client.put("/api/cart/2", request_input, format="json")
+
+        expected_result = {
+            "id": 2,
+            "product": {
+                "id": 2,
+                "product_id": "2",
+                "product_name": "產品B",
+                "price": 800,
+                "sale_price": None,
+                "inventory": 7,
+                "class_name": "plant_model",
+                "app_name": "plant_app",
+            },
+            "user": 1,
+            "quantity": 4,
+            "valid": True,
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_product_missing_data(self):
+        request_input = {
+            "quantity": 1,
+            "valid": True,
+        }
+        response = self.client.put("/api/cart/2", request_input, format="json")
+
+        expected_result = {
+            "product_id": ["這個欄位是必須的。"],
+            "product_name": ["這個欄位是必須的。"],
+            "price": ["這個欄位是必須的。"],
+            "inventory": ["這個欄位是必須的。"],
+            "class_name": ["這個欄位是必須的。"],
+            "app_name": ["這個欄位是必須的。"],
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_put_cart_missing_data(self):
+        request_input = {
+            "product_id": "8",
+            "product_name": "產品E",
+            "price": 400,
+            "inventory": 10,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+        }
+        response = self.client.put("/api/cart/2", request_input, format="json")
+
+        expected_result = {
+            "quantity": ['This field may not be null.'],
+            "valid": ['This field may not be null.'],
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_delete_existed_data(self):
+        response = self.client.delete("/api/cart/1")
+        expected_result = {
+            "message": f"delete entry: 1 successfully"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(CartModel.objects.filter(pk=1)), 0)
+
+    def test_delete_not_exist_data(self):
+        response = self.client.delete("/api/cart/3")
+
+        expected_result = {
+            "message": f"The entry: 3 does not exist in cart"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 

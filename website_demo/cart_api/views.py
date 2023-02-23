@@ -86,15 +86,20 @@ class CartList(APIView):
     @_process_data
     def get(self, request, **kwargs):
         user_obj = kwargs.get("user_obj")
-        cart_obj = CartModel.objects.filter(user=user_obj)
-        if not cart_obj:
+        cart_objs = CartModel.objects.select_related("product").filter(user=user_obj)
+        if not cart_objs:
             return (
                 {
                     "message": "No data"
                 },
                 status.HTTP_200_OK
             )
-        cart_serializer = CartSerializer(cart_obj, many=True)
+        for cart_obj in cart_objs:
+            if cart_obj.product.inventory == 0:
+                cart_obj.valid = False
+                cart_obj.save()
+
+        cart_serializer = CartSerializer(cart_objs, many=True)
         return (
             cart_serializer.data,
             status.HTTP_200_OK
@@ -117,8 +122,8 @@ class CartList(APIView):
         cart_data = {
             "user": user_obj.pk,
             "product": product_data,
-            "quantity": request.POST.get("quantity"),
-            "valid": request.POST.get("valid")
+            "quantity": request.data.get("quantity"),
+            "valid": request.data.get("valid")
         }
 
         cart_serializer = CartSerializer(data=cart_data)
@@ -143,7 +148,10 @@ class CartDetail(APIView):
     def get(self, request, entry_id, **kwargs):
         user_obj = kwargs.get("user_obj")
         try:
-            cart_obj = CartModel.objects.get(pk=entry_id, user=user_obj)
+            cart_obj = CartModel.objects.select_related("product").get(pk=entry_id, user=user_obj)
+            if cart_obj.product.inventory == 0:
+                cart_obj.valid = False
+                cart_obj.save()
             cart_serializer = CartSerializer(cart_obj)
             return (
                 cart_serializer.data,
@@ -183,8 +191,8 @@ class CartDetail(APIView):
             cart_data = {
                 "user": user_obj.pk,
                 "product": product_data,
-                "quantity": request.POST.get("quantity"),
-                "valid": request.POST.get("valid")
+                "quantity": request.data.get("quantity"),
+                "valid": request.data.get("valid")
             }
             cart_serializer = CartSerializer(cart_obj, data=cart_data)
 
@@ -197,7 +205,7 @@ class CartDetail(APIView):
             else:
                 return (
                     cart_serializer.errors,
-                    status.HTTP_200_OK
+                    status.HTTP_400_BAD_REQUEST
                 )
         except CartModel.DoesNotExist:
             return (
