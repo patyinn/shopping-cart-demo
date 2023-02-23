@@ -24,7 +24,7 @@ def _process_data(func):
     @wraps(func)
     def wrap(*args, **kwargs):
         request = args[-1] if args else ""
-        if not isinstance(request, Request):
+        if not hasattr(request, "user"):
             return JsonResponse(
                 {
                     "message": "user not found"
@@ -32,7 +32,6 @@ def _process_data(func):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 safe=False
             )
-
         if request.user.is_authenticated:
             user_obj, created = UserModel.objects.get_or_create(
                 username=request.user.username,
@@ -127,9 +126,10 @@ class CartList(APIView):
         }
 
         cart_serializer = CartSerializer(data=cart_data)
-
         if cart_serializer.is_valid():
             cart_serializer.save()
+            print(cart_serializer.data)
+
             return (
                 cart_serializer.data,
                 status.HTTP_201_CREATED
