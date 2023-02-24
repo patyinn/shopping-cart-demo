@@ -108,7 +108,7 @@
                             {% for item in cart_obj %}
                                 <td align=center valign="middle">
                                     <a href="{% url 'plant_page' item.product.name %}" style="text-decoration:none; color:black;">
-                                        {{ item.name }}
+                                        {{ item.product_name }}
                                     </a>
                                 </td>
                                 <td align=center valign="middle">
@@ -125,7 +125,7 @@
                                 <td align=center valign="middle">NT${{ item.price }}</td>
                                 {% endif %}
                                 <td align=center valign="middle">
-                                  <form action="{% url 'update_cart' item.name %}" method="post">
+                                  <form action="{% url 'update_cart' item.product.product_name item.name %}" method="post">
                                     {% csrf_token %}
                                     <select name="qty" onchange="this.form.submit()">
                                       {% for n in q %}
@@ -142,7 +142,7 @@
 
                                 <td align=center valign="middle">NT${{ item.total_price }}</td>
                                 <td align=center valign="middle">
-                                <a class="btn btn-outline-dark" href='{% url "remove_cart" item.product.name %}'>
+                                <a class="btn btn-outline-dark" href='{% url "remove_cart" item.product.product_name item.id %}'>
                                     刪除
                                 </a>
                                 </td>

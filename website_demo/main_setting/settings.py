@@ -163,14 +163,14 @@ WSGI_APPLICATION = 'main_setting.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'plantdb',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'plantdb.sqlite3'),
         'USER': 'root',
         'PASSWORD': 'bpxu31p4204',
     },
     'cart_db': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'cartdb',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'cartdb.sqlite3'),
         'USER': 'cart_user',
         'PASSWORD': 'bpxu31p4204',
         'TEST': {

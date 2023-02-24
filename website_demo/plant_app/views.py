@@ -4,6 +4,8 @@ import os
 import json
 import pandas as pd
 
+from requests.auth import HTTPBasicAuth
+
 from django.core.cache import cache
 from django.shortcuts import render, get_object_or_404, HttpResponse, redirect, HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
@@ -17,31 +19,49 @@ from django.template.loader import render_to_string
 from django.contrib import messages
 from django.contrib.auth.models import User
 
-from requests.auth import HTTPBasicAuth
 
 from .token import Token
 from .models import MomPlantModel, ChildPlantModel, ChildImageModel, CustomerModel, TransactionModel, OrderModel, Account
 from .forms import CustomerModelForm, TranscationModelForm, RegisterModelForm, LoginModelForm
 from cart_api.views import CartList
 
-DOMAIN = "http://localhost:8000"
+DOMAIN = "http://localhost:8005"
 
 # Create your views here.
+def _call_get_cart_api(request):
+    if request.user.is_authenticated:
+        auth = HTTPBasicAuth(request.user.username, request.user.password)
+        response = requests.get(
+            DOMAIN + "/api/cart",
+            cookies=request.COOKIES,
+            auth=auth
+        )
+    else:
+        response = requests.get(
+            DOMAIN + "/api/cart",
+            cookies=request.COOKIES,
+        )
+    cart_obj = json.loads(response.content)
+
+    username = response.cookies["cart_username"]
+    token = response.cookies[settings.CART_KEY]
+    return cart_obj, username, token
+
+
 def index(request):
     plant_obj = MomPlantModel.objects.all()
 
-    response = requests.get(
-        DOMAIN+"/api/cart",
-        cookies=request.COOKIES,
-        auth=HTTPBasicAuth(request.user.username, request.user.password)
-    )
-    cart_obj = json.loads(response.content)
+    cart_obj, username, token = _call_get_cart_api(request)
 
     context = {
         'plant_object': plant_obj,
         "Cart_nums": len(cart_obj) if not cart_obj.get("message") else 0
     }
-    return render(request, 'index.html', context)
+
+    response = render(request, 'index.html', context)
+    response.set_cookie("cart_username", username)
+    response.set_cookie(settings.CART_KEY, token)
+    return response
 
 
 def category_page(request, mom):
@@ -55,6 +75,8 @@ def category_page(request, mom):
     for i in plant:
         image.append(list(ChildImageModel.objects.filter(name=i)))
 
+    cart_obj, username, token = _call_get_cart_api(request)
+
     context = {
         'plant_object': mom_plant,
         'item': plant,
@@ -64,7 +86,11 @@ def category_page(request, mom):
         'images': image,
         "Cart_nums": len(cart_obj) if not cart_obj.get("message") else 0
     }
-    return render(request, 'plants/category.html', context)
+
+    response = render(request, 'plants/category.html', context)
+    response.set_cookie("cart_username", username)
+    response.set_cookie(settings.CART_KEY, token)
+    return response
 
 
 def plant_page(request, child):
@@ -77,8 +103,7 @@ def plant_page(request, child):
     image_list = [os.path.join('/media', str(i)) for i in image_list if i != '']
     image_list.insert(0, plant_detail.main_image.url)
 
-    response = requests.get(DOMAIN+"/api/cart")
-    cart_obj = json.loads(response.content)
+    cart_obj, username, token = _call_get_cart_api(request)
 
     context = {
         'plant_object': mom_plant,
@@ -87,7 +112,12 @@ def plant_page(request, child):
         'images': image_list,
         "Cart_nums": len(cart_obj) if not cart_obj.get("message") else 0
     }
-    return render(request, 'plants/detail.html', context)
+
+    response = render(request, 'plants/detail.html', context)
+    response.set_cookie("cart_username", username)
+    response.set_cookie(settings.CART_KEY, token)
+
+    return response
 
 
 def add_to_cart(request, product):
@@ -105,25 +135,71 @@ def add_to_cart(request, product):
     if product.sale_price is not None:
         post_data["sale_price"] = product.sale_price
 
-    requests.post(DOMAIN+"/api/cart/", data=post_data)
+    if request.user.is_authenticated:
+        auth = HTTPBasicAuth(request.user.username, request.user.password)
+        requests.post(
+            DOMAIN+"/api/cart/",
+            cookies=request.COOKIES,
+            data=post_data,
+            auth=auth
+        )
+    else:
+        requests.post(
+            DOMAIN+"/api/cart/",
+            cookies=request.COOKIES,
+            data=post_data,
+        )
+
     return redirect('/Entry/{}'.format(product))
 
 
-def remove_from_cart(request, product):
-    product = ChildPlantModel.objects.get(name=product)
-    Cart_list.remove(product)
+def remove_from_cart(request, item_pk):
+    if request.user.is_authenticated:
+        auth = HTTPBasicAuth(request.user.username, request.user.password)
+        requests.delete(
+            DOMAIN + f"/api/cart/{item_pk}",
+            cookies=request.COOKIES,
+            auth=auth
+        )
+    else:
+        requests.delete(
+            DOMAIN + f"/api/cart/{item_pk}",
+            cookies=request.COOKIES,
+        )
+
     return redirect('/Cart')
 
 
-def Update_cart(request, product):
+def update_cart(request, product, item_pk):
     if 'update' in request.POST:
-        qty = request.POST["qty"]
         product = ChildPlantModel.objects.get(name=product)
 
-        if product.sale_price is not None:
-            Cart_list.update(product, qty, product.sale_price)
+        qty = request.POST["qty"]
+        data = {
+            "product_id": product.id,
+            "product_name": product.name,
+            "price": product.price,
+            "inventory": product.inventory,
+            "class_name": product._meta.model_name,
+            "app_name": product._meta.app_label,
+            "quantity": qty,
+            "valid": True,
+        }
+
+        if request.user.is_authenticated:
+            auth = HTTPBasicAuth(request.user.username, request.user.password)
+            requests.put(
+                DOMAIN + f"/api/cart/{item_pk}",
+                cookies=request.COOKIES,
+                data=data,
+                auth=auth
+            )
         else:
-            Cart_list.update(product, qty, product.price)
+            requests.put(
+                DOMAIN + f"/api/cart/{item_pk}",
+                cookies=request.COOKIES,
+                data=data,
+            )
 
         return redirect('/Cart')
     else:
@@ -132,13 +208,17 @@ def Update_cart(request, product):
 
 # https://stackoverflow.com/questions/64915167/how-do-i-use-a-django-url-inside-of-an-option-tag-in-a-dropdown-menu
 def get_cart(request):
+    cart_obj, username, token = _call_get_cart_api(request)
 
-    response = requests.get(DOMAIN + "/api/cart")
-    cart_obj = json.loads(response.content)
     context = {
         "cart_obj": cart_obj if not cart_obj.get("message") else {}
     }
-    return render(request, 'shopping/cart.html', context)
+
+    response = render(request, 'plants/detail.html', context)
+    response.set_cookie("cart_username", username)
+    response.set_cookie(settings.CART_KEY, token)
+    return response
+
 
 # @login_required(login_url="Login")
 def order_page(request):
@@ -187,12 +267,14 @@ def order_page(request):
 
     # 取得從購物車中確認的購買資料
     Cart_data = pd.DataFrame()
+    Cart_list, username, token = _call_get_cart_api(request)
     for item in Cart_list:
         Cart_data = Cart_data.append({
-            'name': item.product.name,
-            'price': item.product.price,
-            'quantity': item.quantity,
-            'total_price': item.total_price,
+            "id": item["id"],
+            'name': item["product"]["product_name"],
+            'price': item["product"]["price"],
+            'quantity': item["product"]["quantity"],
+            'total_price': int(item["product"]["quantity"])*float(item["product"]["price"]),
         }, ignore_index=True)
     try:
         Cart_data = Cart_data.set_index(['name'])
@@ -205,7 +287,8 @@ def order_page(request):
         form2 = CustomerModelForm(request.POST)
         global check_ok
         # 逐一檢查商品狀態與數量是否符合存貨
-        for prod in Cart_data.index:
+        for index in range(len(Cart_data)):
+            prod = Cart_data.loc[index, 'name']
             inv = plant_inventory.get(name=prod).inventory
             status = plant_inventory.get(name=prod).status
             qty = int(Cart_data.loc[prod, "quantity"])
@@ -215,7 +298,7 @@ def order_page(request):
             else:
                 check_ok = False
                 product = plant_inventory.get(name=prod)
-                Cart_list.remove(product)
+                remove_from_cart(request, Cart_data.loc[index, 'id'])
                 break
 
         if check_ok:
@@ -285,7 +368,9 @@ def order_page(request):
                 )
 
                 # 新增訂單詳細內容至訂單系統模型上
-                for prod in Cart_data.index:
+                for index in range(len(Cart_data)):
+                    prod = Cart_data.loc[index, 'name']
+
                     orderid_fk = TransactionModel.objects.only('OrderID').get(OrderID=OrderID)
                     product_fk = ChildPlantModel.objects.only('name').get(name=prod)
                     price = Cart_data.loc[prod, "price"]
@@ -307,8 +392,10 @@ def order_page(request):
                     if inv == 0:
                         ChildPlantModel.objects.filter(name=prod).update(status="O")
 
-                Cart_list.clear()
+                    remove_from_cart(request, Cart_data.loc[index, 'id'])
                 return redirect('/OrderComplete/{}'.format(OrderID))
+
+    cart_obj, username, token = _call_get_cart_api(request)
 
     context = {
         'plant_object': mom_plant,
@@ -316,7 +403,7 @@ def order_page(request):
         'form1': Customer_form,
         'form2': Transcation_form,
         'shopping_list': Cart_list,
-        "Cart_nums": num
+        "Cart_nums": len(cart_obj) if not cart_obj.get("message") else 0,
     }
     return render(request, 'shopping/order.html', context)
 
