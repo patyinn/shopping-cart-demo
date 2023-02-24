@@ -450,6 +450,28 @@ class CartListTests(TestCase):
         self.assertEqual(json.loads(response.content), expected_result)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_delete(self):
+        request_input = {
+            "entries": "1,2",
+        }
+        response = self.client.delete("/api/cart/", request_input, format="json")
+
+        expected_result = {
+            "message": f"delete entry: ['1', '2'] successfully"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(CartModel.objects.filter(user=self.user1)), 0)
+
+    def test_delete_missing_target(self):
+        request_input = {
+            "entries": "",
+        }
+        expected_result = len(CartModel.objects.filter(user=self.user1))
+        response = self.client.delete("/api/cart/", request_input, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(len(CartModel.objects.filter(user=self.user1)), expected_result)
 
 class CartDetailTests(TestCase):
     databases = "__all__"
@@ -746,6 +768,248 @@ class CartDetailTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
+class ProcessProductTests(TestCase):
+    databases = "__all__"
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='jacob',
+            email='jacob@…',
+            password='top_secret'
+        )
+
+        self.user1_token = uuid.uuid4()
+        self.user1 = UserModel.objects.create(
+            username=self.user.username,
+            token=self.user1_token,
+            is_auth=True
+        )
+
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+        self.product_obj1 = ProductModel.objects.create(
+            product_id="1",
+            product_name="產品A",
+            price=1000,
+            sale_price=500,
+            inventory=0,
+            class_name="plant_model",
+            app_name="plant_app",
+        )
+        self.product_obj2 = ProductModel.objects.create(
+            product_id="2",
+            product_name="產品B",
+            price=800,
+            inventory=7,
+            class_name="plant_model",
+            app_name="plant_app",
+        )
+        self.product_obj3 = ProductModel.objects.create(
+            product_id="2",
+            product_name="產品C",
+            price=800,
+            inventory=7,
+            class_name="plant_model",
+            app_name="plant_app",
+        )
+
+
+    def test_get_existed_data(self):
+
+        response = self.client.get("/api/cart/product/1/plant_model/plant_app")
+
+        expected_result = {
+            "id": 1,
+            "product_id": "1",
+            "product_name": "產品A",
+            "price": 1000,
+            "sale_price": 500,
+            "inventory": 0,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+        }
+
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_duplicate_data(self):
+
+        response = self.client.get("/api/cart/product/2/plant_model/plant_app")
+
+        expected_result = {
+            "message": "duplicate products (id, class and app) in database"
+        }
+
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_not_exist_data(self):
+
+        response = self.client.get("/api/cart/product/6/plant_model/plant_app")
+
+        expected_result = {
+            "message": "product doesn't register in database"
+        }
+
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_post_new_data(self):
+        request_input = {
+            "product_id": "3",
+            "product_name": "產品S",
+            "price": 1000,
+            "inventory": 7,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+        }
+
+        response = self.client.post("/api/cart/product/6/plant_models/plant_apps",
+                                    request_input, json=request_input, format="json")
+
+        expected_result = {
+            "id": 4,
+            "product_id": "6",
+            "product_name": "產品S",
+            "price": 1000,
+            "sale_price": None,
+            "inventory": 7,
+            "class_name": "plant_models",
+            "app_name": "plant_apps",
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(ProductModel.objects.filter(product_id="6")), 1)
+
+    def test_post_with_exist_data(self):
+        request_input = {
+            "product_id": "1",
+            "product_name": "產品S",
+            "price": 3000,
+            "inventory": 0,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+        }
+
+        response = self.client.post("/api/cart/product/1/plant_models/plant_apps",
+                                    request_input, json=request_input, format="json")
+
+        expected_result = {
+            "message": "The item has existed. entry id is 1"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_post_with_missing_input_data(self):
+        request_input = {}
+
+        response = self.client.post("/api/cart/product/1/plant_models/plant_apps",
+                                    request_input, json=request_input, format="json")
+
+        expected_result = {
+            "product_name": ["這個欄位是必須的。"],
+            "price": ["這個欄位是必須的。"],
+            "inventory": ["這個欄位是必須的。"],
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_put_exist_data(self):
+        request_input = {
+            "product_name": "產品S",
+            "price": 6000,
+            "inventory": 0,
+        }
+
+        response = self.client.put("/api/cart/product/1/plant_model/plant_app",
+                                    request_input, json=request_input, format="json")
+
+        expected_result = {
+            "id": 1,
+            "product_id": "1",
+            "product_name": "產品S",
+            "price": 6000,
+            "sale_price": None,
+            "inventory": 0,
+            "class_name": "plant_model",
+            "app_name": "plant_app",
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_not_exist_data(self):
+        request_input = {
+            "product_name": "產品S",
+            "price": 6000,
+            "inventory": 0,
+        }
+
+        response = self.client.put("/api/cart/product/6/plant_model/plant_app",
+                                    request_input, json=request_input, format="json")
+
+        expected_result = {
+            "product_name": ["這個欄位是必須的。"],
+            "price": ["這個欄位是必須的。"],
+            "inventory": ["這個欄位是必須的。"],
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_duplicate_exist_data(self):
+        request_input = {
+            "product_name": "產品S",
+            "price": 6000,
+            "inventory": 0,
+        }
+
+        response = self.client.put("/api/cart/product/2/plant_model/plant_app",
+                                    request_input, json=request_input, format="json")
+
+        expected_result = {
+            "message": "duplicate products (id, class and app) in database"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_put_missing_input_data(self):
+        request_input = {}
+
+        response = self.client.put("/api/cart/product/2/plant_model/plant_app",
+                                    request_input, json=request_input, format="json")
+
+        expected_result = {
+            "message": "duplicate products (id, class and app) in database"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_exist_data(self):
+        response = self.client.delete("/api/cart/product/1/plant_model/plant_app")
+
+        expected_result = {
+            "message": "The item has deleted."
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_not_exist_data(self):
+        response = self.client.delete("/api/cart/product/3/plant_model/plant_app")
+
+        expected_result = {
+            "message": "product doesn't register in database"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_duplicate_exist_data(self):
+        response = self.client.delete("/api/cart/product/2/plant_model/plant_app")
+
+        expected_result = {
+            "message": "duplicate products (id, class and app) in database"
+        }
+        self.assertEqual(json.loads(response.content), expected_result)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 if __name__ == '__main__':

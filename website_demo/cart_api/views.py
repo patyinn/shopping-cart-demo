@@ -140,6 +140,26 @@ class CartList(APIView):
                 status.HTTP_400_BAD_REQUEST
             )
 
+    @_process_data
+    def delete(self, request, **kwargs):
+        user_obj = kwargs.get("user_obj")
+        try:
+            entries_id = request.data.get("entries", "").split(",")
+            cart_objs = CartModel.objects.filter(pk__in=entries_id, user=user_obj)
+            cart_objs.delete()
+            return (
+                {
+                    "message": f"delete entry: {entries_id} successfully"
+                },
+                status.HTTP_200_OK
+            )
+        except Exception as e:
+            return (
+                {
+                    "message": f"Error happens because of {e}"
+                },
+                status.HTTP_400_BAD_REQUEST
+            )
 
 class CartDetail(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
@@ -250,7 +270,7 @@ class CartDetail(APIView):
             )
 
 
-@api_view(["GET", "POST", "PUT"])
+@api_view(["GET", "POST", "PUT", "DELETE"])
 @_process_data
 def product_process(request, product_id, class_name, app_name, **kwargs):
     request_data = dict(request.data)
@@ -283,7 +303,6 @@ def product_process(request, product_id, class_name, app_name, **kwargs):
         elif not product_objs:
             if request.method == "POST":
                 product_serializer = ProductSerializer(data=request_data)
-                print(product_serializer)
                 if product_serializer.is_valid():
                     product_serializer.save()
                     return (
@@ -328,6 +347,14 @@ def product_process(request, product_id, class_name, app_name, **kwargs):
                     "message": f"The item has existed. entry id is {product_obj.pk}"
                 },
                 status.HTTP_400_BAD_REQUEST
+            )
+        elif request.method == "DELETE":
+            product_obj.delete()
+            return (
+                {
+                    "message": "The item has deleted."
+                },
+                status.HTTP_200_OK
             )
 
     except Exception as e:

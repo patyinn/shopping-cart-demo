@@ -25,7 +25,7 @@ class ProductSerializer(serializers.ModelSerializer):
             )
             raise serializers.ValidationError("The model has exist")
         except ProductModel.DoesNotExist:
-            return super().create()
+            return super().create(validated_data)
         except Exception as e:
             raise serializers.ValidationError("error, message is {}".format(e))
 
