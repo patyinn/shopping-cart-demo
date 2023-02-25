@@ -80,6 +80,8 @@ class CartSerializer(serializers.ModelSerializer):
             inventory = product_info["inventory"]
             if self.validated_data["quantity"] > int(product_info["inventory"]):
                 self.validated_data["quantity"] = int(product_info["inventory"])
+            if self.validated_data["quantity"] == 0:
+                self.validated_data["valid"] = False
 
         if inventory == 0:
             self.validated_data["quantity"] = 0

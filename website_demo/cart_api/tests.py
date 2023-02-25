@@ -428,7 +428,9 @@ class CartListTests(TestCase):
         response = self.client.post("/api/cart/", request_input, json=request_input, format="json")
 
         expected_result = {
-            'quantity': ['This field may not be null.']
+            "message": {
+                'quantity': ['This field may not be null.']
+            }
         }
         self.assertEqual(json.loads(response.content), expected_result)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -440,12 +442,14 @@ class CartListTests(TestCase):
         response = self.client.post("/api/cart/", request_input, json=request_input, format="json")
 
         expected_result = {
-            "product_id": ["這個欄位是必須的。"],
-            "product_name": ["這個欄位是必須的。"],
-            "price": ["這個欄位是必須的。"],
-            "inventory": ["這個欄位是必須的。"],
-            "class_name": ["這個欄位是必須的。"],
-            "app_name": ["這個欄位是必須的。"],
+            "message": {
+                "product_id": ["這個欄位是必須的。"],
+                "product_name": ["這個欄位是必須的。"],
+                "price": ["這個欄位是必須的。"],
+                "inventory": ["這個欄位是必須的。"],
+                "class_name": ["這個欄位是必須的。"],
+                "app_name": ["這個欄位是必須的。"],
+            }
         }
         self.assertEqual(json.loads(response.content), expected_result)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -721,13 +725,16 @@ class CartDetailTests(TestCase):
         response = self.client.put("/api/cart/2", request_input, format="json")
 
         expected_result = {
-            "product_id": ["這個欄位是必須的。"],
-            "product_name": ["這個欄位是必須的。"],
-            "price": ["這個欄位是必須的。"],
-            "inventory": ["這個欄位是必須的。"],
-            "class_name": ["這個欄位是必須的。"],
-            "app_name": ["這個欄位是必須的。"],
+            "message": {
+                "product_id": ["這個欄位是必須的。"],
+                "product_name": ["這個欄位是必須的。"],
+                "price": ["這個欄位是必須的。"],
+                "inventory": ["這個欄位是必須的。"],
+                "class_name": ["這個欄位是必須的。"],
+                "app_name": ["這個欄位是必須的。"],
+            }
         }
+
         self.assertEqual(json.loads(response.content), expected_result)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -743,8 +750,10 @@ class CartDetailTests(TestCase):
         response = self.client.put("/api/cart/2", request_input, format="json")
 
         expected_result = {
-            "quantity": ['This field may not be null.'],
-            "valid": ['This field may not be null.'],
+            "message": {
+                "quantity": ['This field may not be null.'],
+                "valid": ['This field may not be null.'],
+            }
         }
         self.assertEqual(json.loads(response.content), expected_result)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -888,11 +897,11 @@ class ProcessProductTests(TestCase):
             "product_name": "產品S",
             "price": 3000,
             "inventory": 0,
-            "class_name": "plant_model",
-            "app_name": "plant_app",
+            "class_name": "plant_models",
+            "app_name": "plant_apps",
         }
 
-        response = self.client.post("/api/cart/product/1/plant_models/plant_apps",
+        response = self.client.post("/api/cart/product/1/plant_model/plant_app",
                                     request_input, json=request_input, format="json")
 
         expected_result = {
@@ -908,9 +917,11 @@ class ProcessProductTests(TestCase):
                                     request_input, json=request_input, format="json")
 
         expected_result = {
-            "product_name": ["這個欄位是必須的。"],
-            "price": ["這個欄位是必須的。"],
-            "inventory": ["這個欄位是必須的。"],
+            "message": {
+                "product_name": ["這個欄位是必須的。"],
+                "price": ["這個欄位是必須的。"],
+                "inventory": ["這個欄位是必須的。"],
+            }
         }
         self.assertEqual(json.loads(response.content), expected_result)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -949,9 +960,7 @@ class ProcessProductTests(TestCase):
                                     request_input, json=request_input, format="json")
 
         expected_result = {
-            "product_name": ["這個欄位是必須的。"],
-            "price": ["這個欄位是必須的。"],
-            "inventory": ["這個欄位是必須的。"],
+            "message": "product doesn't register in database"
         }
         self.assertEqual(json.loads(response.content), expected_result)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -975,14 +984,18 @@ class ProcessProductTests(TestCase):
     def test_put_missing_input_data(self):
         request_input = {}
 
-        response = self.client.put("/api/cart/product/2/plant_model/plant_app",
+        response = self.client.put("/api/cart/product/1/plant_model/plant_app",
                                     request_input, json=request_input, format="json")
 
         expected_result = {
-            "message": "duplicate products (id, class and app) in database"
+            "message": {
+                "product_name": ["這個欄位是必須的。"],
+                "price": ["這個欄位是必須的。"],
+                "inventory": ["這個欄位是必須的。"],
+            }
         }
         self.assertEqual(json.loads(response.content), expected_result)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_delete_exist_data(self):
         response = self.client.delete("/api/cart/product/1/plant_model/plant_app")

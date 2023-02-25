@@ -114,7 +114,9 @@ class CartList(APIView):
             product_data = product_serializer.data
         else:
             return (
-                product_serializer.errors,
+                {
+                    "message": product_serializer.errors
+                },
                 status.HTTP_400_BAD_REQUEST
             )
 
@@ -128,15 +130,15 @@ class CartList(APIView):
         cart_serializer = CartSerializer(data=cart_data)
         if cart_serializer.is_valid():
             cart_serializer.save()
-            print(cart_serializer.data)
-
             return (
                 cart_serializer.data,
                 status.HTTP_201_CREATED
             )
         else:
             return (
-                cart_serializer.errors,
+                {
+                    "message": cart_serializer.errors
+                },
                 status.HTTP_400_BAD_REQUEST
             )
 
@@ -204,7 +206,9 @@ class CartDetail(APIView):
                 product_data = product_serializer.data
             else:
                 return (
-                    product_serializer.errors,
+                    {
+                        "message": product_serializer.errors
+                    },
                     status.HTTP_400_BAD_REQUEST
                 )
 
@@ -224,7 +228,9 @@ class CartDetail(APIView):
                 )
             else:
                 return (
-                    cart_serializer.errors,
+                    {
+                        "message": cart_serializer.errors
+                    },
                     status.HTTP_400_BAD_REQUEST
                 )
         except CartModel.DoesNotExist:
@@ -310,7 +316,9 @@ def product_process(request, product_id, class_name, app_name, **kwargs):
                         status.HTTP_201_CREATED
                     )
                 return (
-                    product_serializer.errors,
+                    {
+                        "message": product_serializer.errors
+                    },
                     status.HTTP_400_BAD_REQUEST
                 )
             return (
@@ -338,7 +346,9 @@ def product_process(request, product_id, class_name, app_name, **kwargs):
                     status.HTTP_200_OK
                 )
             return (
-                product_serializer.errors,
+                {
+                    "message": product_serializer.errors
+                },
                 status.HTTP_400_BAD_REQUEST
             )
         elif request.method == "POST":

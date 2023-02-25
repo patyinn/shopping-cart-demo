@@ -10,7 +10,6 @@ from django.core.cache import cache
 from django.shortcuts import render, get_object_or_404, HttpResponse, redirect, HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
 # https://www.learncodewithmike.com/2020/05/django-send-email.html
 from django.core.mail import EmailMessage
 from django.core.mail import EmailMultiAlternatives
@@ -18,14 +17,14 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.contrib import messages
 from django.contrib.auth.models import User
-
+from django.middleware.csrf import get_token
 
 from .token import Token
 from .models import MomPlantModel, ChildPlantModel, ChildImageModel, CustomerModel, TransactionModel, OrderModel, Account
 from .forms import CustomerModelForm, TranscationModelForm, RegisterModelForm, LoginModelForm
 from cart_api.views import CartList
 
-DOMAIN = "http://localhost:8005"
+DOMAIN = "http://localhost:8000"
 
 # Create your views here.
 def _call_get_cart_api(request):
@@ -43,8 +42,8 @@ def _call_get_cart_api(request):
         )
     cart_obj = json.loads(response.content)
 
-    username = response.cookies["cart_username"]
-    token = response.cookies[settings.CART_KEY]
+    username = response.cookies.get("cart_username")
+    token = response.cookies.get(settings.CART_KEY)
     return cart_obj, username, token
 
 
@@ -55,12 +54,14 @@ def index(request):
 
     context = {
         'plant_object': plant_obj,
-        "Cart_nums": len(cart_obj) if not cart_obj.get("message") else 0
+        "Cart_nums": len(cart_obj) if isinstance(cart_obj, list) else 0
     }
 
     response = render(request, 'index.html', context)
-    response.set_cookie("cart_username", username)
-    response.set_cookie(settings.CART_KEY, token)
+    if username:
+        response.set_cookie("cart_username", username)
+    if token:
+        response.set_cookie(settings.CART_KEY, token)
     return response
 
 
@@ -84,12 +85,14 @@ def category_page(request, mom):
         # https://blog.csdn.net/qq_44302282/article/details/108326844
         # 輪播插件
         'images': image,
-        "Cart_nums": len(cart_obj) if not cart_obj.get("message") else 0
+        "Cart_nums": len(cart_obj) if isinstance(cart_obj, list) else 0
     }
 
     response = render(request, 'plants/category.html', context)
-    response.set_cookie("cart_username", username)
-    response.set_cookie(settings.CART_KEY, token)
+    if username:
+        response.set_cookie("cart_username", username)
+    if token:
+        response.set_cookie(settings.CART_KEY, token)
     return response
 
 
@@ -110,17 +113,21 @@ def plant_page(request, child):
         'item': plant,
         'details': plant_detail,
         'images': image_list,
-        "Cart_nums": len(cart_obj) if not cart_obj.get("message") else 0
+        "Cart_nums": len(cart_obj) if isinstance(cart_obj, list) else 0
     }
 
     response = render(request, 'plants/detail.html', context)
-    response.set_cookie("cart_username", username)
-    response.set_cookie(settings.CART_KEY, token)
-
+    if username:
+        response.set_cookie("cart_username", username)
+    if token:
+        response.set_cookie(settings.CART_KEY, token)
     return response
 
 
 def add_to_cart(request, product):
+    headers = {
+        'X-CSRFToken': get_token(request),
+    }
     product = ChildPlantModel.objects.get(name=product)
     post_data = {
         "product_id": product.id,
@@ -137,17 +144,19 @@ def add_to_cart(request, product):
 
     if request.user.is_authenticated:
         auth = HTTPBasicAuth(request.user.username, request.user.password)
-        requests.post(
+        response = requests.post(
             DOMAIN+"/api/cart/",
             cookies=request.COOKIES,
-            data=post_data,
-            auth=auth
+            json=post_data,
+            auth=auth,
+            headers=headers,
         )
     else:
         requests.post(
             DOMAIN+"/api/cart/",
             cookies=request.COOKIES,
-            data=post_data,
+            json=post_data,
+            headers=headers,
         )
 
     return redirect('/Entry/{}'.format(product))
@@ -209,14 +218,28 @@ def update_cart(request, product, item_pk):
 # https://stackoverflow.com/questions/64915167/how-do-i-use-a-django-url-inside-of-an-option-tag-in-a-dropdown-menu
 def get_cart(request):
     cart_obj, username, token = _call_get_cart_api(request)
-
+    print(cart_obj)
+    if isinstance(cart_obj, list):
+        total_price = 0
+        for obj in cart_obj:
+            obj["product"]["inventory"] = range(obj["product"]["inventory"])
+            product_img = ChildPlantModel.objects.get(pk=obj["product"]["product_id"])
+            obj["product"]["main_image"] = product_img.main_image
+            price = obj["product"]["sale_price"] if obj["product"]["sale_price"] else obj["product"]["price"]
+            obj["price"] = obj["quantity"] * price
+            total_price += obj["price"]
+    else:
+        cart_obj = ""
     context = {
-        "cart_obj": cart_obj if not cart_obj.get("message") else {}
+        "cart": cart_obj,
+        "total_price": total_price
     }
 
-    response = render(request, 'plants/detail.html', context)
-    response.set_cookie("cart_username", username)
-    response.set_cookie(settings.CART_KEY, token)
+    response = render(request, 'shopping/cart.html', context)
+    if username:
+        response.set_cookie("cart_username", username)
+    if token:
+        response.set_cookie(settings.CART_KEY, token)
     return response
 
 
@@ -403,7 +426,7 @@ def order_page(request):
         'form1': Customer_form,
         'form2': Transcation_form,
         'shopping_list': Cart_list,
-        "Cart_nums": len(cart_obj) if not cart_obj.get("message") else 0,
+        "Cart_nums": len(cart_obj) if isinstance(cart_obj, list) else 0,
     }
     return render(request, 'shopping/order.html', context)
 
