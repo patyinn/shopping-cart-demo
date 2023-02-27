@@ -124,7 +124,7 @@
                                 <td align=center valign="middle">NT${{ item.product.price }}</td>
                                 {% endif %}
                                 <td align=center valign="middle">
-                                  <form action="{% url 'update_cart' item.product.product_name item.product.id %}" method="post">
+                                  <form action="{% url 'update_cart' item.product.product_name item.id %}" method="post">
                                     {% csrf_token %}
                                     <select name="qty" onchange="this.form.submit()">
                                       {% for n in item.product.inventory %}
@@ -135,13 +135,13 @@
                                         {% endif %}
                                       {% endfor %}
                                     </select>
-                                      <input type="hidden" name="update">
+                                      <input type="hidden" name="_update">
                                   </form>
                                 </td>
 
                                 <td align=center valign="middle">NT${{ item.price }}</td>
                                 <td align=center valign="middle">
-                                <a class="btn btn-outline-dark" href='{% url "remove_cart" item.product.product_name item.id %}'>
+                                <a class="btn btn-outline-dark" href='{% url "remove_cart" item.id %}'>
                                     刪除
                                 </a>
                                 </td>

@@ -3,6 +3,7 @@ import datetime
 import os
 import json
 import pandas as pd
+import copy
 
 from requests.auth import HTTPBasicAuth
 
@@ -144,10 +145,10 @@ def add_to_cart(request, product):
 
     if request.user.is_authenticated:
         auth = HTTPBasicAuth(request.user.username, request.user.password)
-        response = requests.post(
+        requests.post(
             DOMAIN+"/api/cart/",
             cookies=request.COOKIES,
-            json=post_data,
+            data=post_data,
             auth=auth,
             headers=headers,
         )
@@ -155,7 +156,7 @@ def add_to_cart(request, product):
         requests.post(
             DOMAIN+"/api/cart/",
             cookies=request.COOKIES,
-            json=post_data,
+            data=post_data,
             headers=headers,
         )
 
@@ -163,24 +164,33 @@ def add_to_cart(request, product):
 
 
 def remove_from_cart(request, item_pk):
+    headers = {
+        'X-CSRFToken': get_token(request),
+    }
+
     if request.user.is_authenticated:
         auth = HTTPBasicAuth(request.user.username, request.user.password)
         requests.delete(
             DOMAIN + f"/api/cart/{item_pk}",
             cookies=request.COOKIES,
-            auth=auth
+            auth=auth,
+            headers=headers,
         )
     else:
         requests.delete(
             DOMAIN + f"/api/cart/{item_pk}",
             cookies=request.COOKIES,
+            headers=headers,
         )
 
     return redirect('/Cart')
 
 
 def update_cart(request, product, item_pk):
-    if 'update' in request.POST:
+    headers = {
+        'X-CSRFToken': get_token(request),
+    }
+    if '_update' in request.POST:
         product = ChildPlantModel.objects.get(name=product)
 
         qty = request.POST["qty"]
@@ -194,42 +204,88 @@ def update_cart(request, product, item_pk):
             "quantity": qty,
             "valid": True,
         }
-
         if request.user.is_authenticated:
             auth = HTTPBasicAuth(request.user.username, request.user.password)
             requests.put(
                 DOMAIN + f"/api/cart/{item_pk}",
                 cookies=request.COOKIES,
                 data=data,
-                auth=auth
+                auth=auth,
+                headers=headers,
             )
         else:
             requests.put(
                 DOMAIN + f"/api/cart/{item_pk}",
                 cookies=request.COOKIES,
                 data=data,
+                headers=headers,
             )
 
-        return redirect('/Cart')
-    else:
-        pass
+    return redirect('/Cart')
 
 
 # https://stackoverflow.com/questions/64915167/how-do-i-use-a-django-url-inside-of-an-option-tag-in-a-dropdown-menu
 def get_cart(request):
+    headers = {
+        'X-CSRFToken': get_token(request),
+    }
+
     cart_obj, username, token = _call_get_cart_api(request)
-    print(cart_obj)
     if isinstance(cart_obj, list):
         total_price = 0
+        pks = [obj["product"]["product_id"] for obj in cart_obj if obj["product"]["class_name"] == "childplantmodel" ]
+        product_info = ChildPlantModel.objects.filter(pk__in=pks).values()
+        product_mapper = {str(p["id"]): p for p in product_info}
         for obj in cart_obj:
-            obj["product"]["inventory"] = range(obj["product"]["inventory"])
-            product_img = ChildPlantModel.objects.get(pk=obj["product"]["product_id"])
-            obj["product"]["main_image"] = product_img.main_image
+            product = product_mapper.get(obj["product"]["product_id"])
+
+            if product:
+                update_info = {
+                    "product_name": product["name"],
+                    "price": product["price"],
+                    "inventory": product["inventory"],
+                }
+                if product["sale_price"] != 0:
+                    update_info["sale_price"] = product["sale_price"]
+
+                cart_product = copy.deepcopy(obj["product"])
+                cart_product.update(update_info)
+                if cart_product != obj["product"]:
+                    from pprint import pprint
+                    pprint(cart_product)
+                    pprint(obj["product"])
+
+                    if request.user.is_authenticated:
+                        auth = HTTPBasicAuth(request.user.username, request.user.password)
+                        response = requests.put(
+                            DOMAIN + f"""/api/cart/product/{cart_product["product_id"]}/{cart_product["class_name"]}/{cart_product["app_name"]}""",
+                            cookies=request.COOKIES,
+                            data=cart_product,
+                            auth=auth,
+                            headers=headers,
+                        )
+                        print(response.status_code)
+                    else:
+                        requests.put(
+                            DOMAIN + f"""/api/cart/product/{cart_product["product_id"]}/{cart_product["class_name"]}/{cart_product["app_name"]}""",
+                            cookies=request.COOKIES,
+                            data=cart_product,
+                            headers=headers,
+                        )
+
+
+
+                product_img = product["main_image"]
+                obj["product"]["main_image"] = "/media/" + product_img
+
+            obj["product"]["inventory"] = range(1, obj["product"]["inventory"]+1)
             price = obj["product"]["sale_price"] if obj["product"]["sale_price"] else obj["product"]["price"]
             obj["price"] = obj["quantity"] * price
             total_price += obj["price"]
     else:
         cart_obj = ""
+        total_price = 0
+
     context = {
         "cart": cart_obj,
         "total_price": total_price

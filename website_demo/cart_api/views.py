@@ -278,7 +278,9 @@ class CartDetail(APIView):
 
 @api_view(["GET", "POST", "PUT", "DELETE"])
 @_process_data
-def product_process(request, product_id, class_name, app_name, **kwargs):
+def product_process(request, product_id, class_name, app_name):
+    print("+======================")
+
     request_data = dict(request.data)
     request_data = {
         k: (v[0] if isinstance(v, list) else v)
@@ -297,6 +299,8 @@ def product_process(request, product_id, class_name, app_name, **kwargs):
             class_name=class_name,
             app_name=app_name,
         )
+        print("+======================")
+        print(product_objs)
 
         if len(product_objs) > 1:
             return (
