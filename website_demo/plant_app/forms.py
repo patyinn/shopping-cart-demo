@@ -37,7 +37,7 @@ class TranscationModelForm(forms.ModelForm):
             'payment': forms.Select(attrs={'class': 'form-control', 'style': 'width:50%'}),
             'delivery': forms.Select(attrs={'class': 'form-control select', 'style': 'width:50%'}),
             'address': forms.TextInput(
-                attrs={'class': 'form-control', 'style': 'width:100%;', "placeholder": "請選擇711店家, 宅配地點或是面交地點(限捷運景平、景安)"}),
+                attrs={'class': 'form-control', 'style': 'width:100%;', "placeholder": "請選擇711店家, 宅配地點或是面交地點"}),
             'comment': forms.TextInput(
                 attrs={'class': 'form-control', 'style': 'height:100px; width:100%;', "placeholder": "想說的話"}),
         }

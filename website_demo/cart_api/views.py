@@ -276,11 +276,13 @@ class CartDetail(APIView):
             )
 
 
-@api_view(["GET", "POST", "PUT", "DELETE"])
-@_process_data
-def product_process(request, product_id, class_name, app_name):
-    print("+======================")
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import authentication_classes
 
+@api_view(["GET", "POST", "PUT", "DELETE"])
+@authentication_classes((SessionAuthentication, BasicAuthentication, ))
+@_process_data
+def product_process(request, product_id, class_name, app_name, *args, **kwargs):
     request_data = dict(request.data)
     request_data = {
         k: (v[0] if isinstance(v, list) else v)
@@ -299,9 +301,6 @@ def product_process(request, product_id, class_name, app_name):
             class_name=class_name,
             app_name=app_name,
         )
-        print("+======================")
-        print(product_objs)
-
         if len(product_objs) > 1:
             return (
                 {

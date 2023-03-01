@@ -92,10 +92,10 @@
             {% for item in shopping_list %}
               <li class="list-group-item d-flex justify-content-between lh-sm">
                 <div>
-                  <h6 class="my-0">{{ item.product.name }}</h6>
+                  <h6 class="my-0">{{ item.product.product_name }}</h6>
                   <small class="text-muted">x {{ item.quantity }}</small>
                 </div>
-                <span class="text-muted">${{ item.total_price }}</span>
+                <span class="text-muted">${{ item.price }}</span>
               </li>
             {% endfor %}
 
@@ -103,7 +103,7 @@
                 <li class="list-group-item d-flex justify-content-between">
                     <span>總計，不含運費 (TWD)</span>
                     <strong>
-                        {{ shopping_list.summary }}
+                        {{ total_price }}
                     元</strong>
                 {% else %}
                 <li class="list-group-item d-flex justify-content-between bg-light">

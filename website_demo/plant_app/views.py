@@ -251,20 +251,16 @@ def get_cart(request):
                 cart_product = copy.deepcopy(obj["product"])
                 cart_product.update(update_info)
                 if cart_product != obj["product"]:
-                    from pprint import pprint
-                    pprint(cart_product)
-                    pprint(obj["product"])
-
+                    obj["product"].update(update_info)
                     if request.user.is_authenticated:
                         auth = HTTPBasicAuth(request.user.username, request.user.password)
-                        response = requests.put(
+                        requests.put(
                             DOMAIN + f"""/api/cart/product/{cart_product["product_id"]}/{cart_product["class_name"]}/{cart_product["app_name"]}""",
                             cookies=request.COOKIES,
                             data=cart_product,
                             auth=auth,
                             headers=headers,
                         )
-                        print(response.status_code)
                     else:
                         requests.put(
                             DOMAIN + f"""/api/cart/product/{cart_product["product_id"]}/{cart_product["class_name"]}/{cart_product["app_name"]}""",
@@ -273,13 +269,11 @@ def get_cart(request):
                             headers=headers,
                         )
 
-
-
                 product_img = product["main_image"]
                 obj["product"]["main_image"] = "/media/" + product_img
 
-            obj["product"]["inventory"] = range(1, obj["product"]["inventory"]+1)
-            price = obj["product"]["sale_price"] if obj["product"]["sale_price"] else obj["product"]["price"]
+            obj["product"]["inventory"] = range(1, cart_product["inventory"]+1)
+            price = cart_product["sale_price"] if cart_product["sale_price"] else cart_product["price"]
             obj["price"] = obj["quantity"] * price
             total_price += obj["price"]
     else:
@@ -347,14 +341,19 @@ def order_page(request):
     # 取得從購物車中確認的購買資料
     Cart_data = pd.DataFrame()
     Cart_list, username, token = _call_get_cart_api(request)
+    total_price = 0
     for item in Cart_list:
+        price = int(item["quantity"])*float(item["product"]["price"])
+        item["price"] = price
+        total_price += price
         Cart_data = Cart_data.append({
             "id": item["id"],
             'name': item["product"]["product_name"],
             'price': item["product"]["price"],
-            'quantity': item["product"]["quantity"],
-            'total_price': int(item["product"]["quantity"])*float(item["product"]["price"]),
+            'quantity': item["quantity"],
+            'total_price': item["price"],
         }, ignore_index=True)
+
     try:
         Cart_data = Cart_data.set_index(['name'])
     except:
@@ -366,8 +365,7 @@ def order_page(request):
         form2 = CustomerModelForm(request.POST)
         global check_ok
         # 逐一檢查商品狀態與數量是否符合存貨
-        for index in range(len(Cart_data)):
-            prod = Cart_data.loc[index, 'name']
+        for prod in Cart_data.index:
             inv = plant_inventory.get(name=prod).inventory
             status = plant_inventory.get(name=prod).status
             qty = int(Cart_data.loc[prod, "quantity"])
@@ -377,9 +375,10 @@ def order_page(request):
             else:
                 check_ok = False
                 product = plant_inventory.get(name=prod)
-                remove_from_cart(request, Cart_data.loc[index, 'id'])
+                remove_from_cart(request, Cart_data.loc[prod, 'id'])
                 break
 
+        print(check_ok)
         if check_ok:
             if form1.is_valid() and form2.is_valid():
 
@@ -425,7 +424,7 @@ def order_page(request):
                     shipping_fee = 80
                 else:
                     shipping_fee = 0
-                total_payment = Cart_list.summary() + shipping_fee
+                total_payment = total_price + shipping_fee
 
                 if 'save_trans' in request.POST and request.user.is_authenticated:
                     save_check = True
@@ -447,9 +446,7 @@ def order_page(request):
                 )
 
                 # 新增訂單詳細內容至訂單系統模型上
-                for index in range(len(Cart_data)):
-                    prod = Cart_data.loc[index, 'name']
-
+                for prod in Cart_data.index:
                     orderid_fk = TransactionModel.objects.only('OrderID').get(OrderID=OrderID)
                     product_fk = ChildPlantModel.objects.only('name').get(name=prod)
                     price = Cart_data.loc[prod, "price"]
@@ -471,9 +468,13 @@ def order_page(request):
                     if inv == 0:
                         ChildPlantModel.objects.filter(name=prod).update(status="O")
 
-                    remove_from_cart(request, Cart_data.loc[index, 'id'])
+                    remove_from_cart(request, Cart_data.loc[prod, 'id'])
                 return redirect('/OrderComplete/{}'.format(OrderID))
-
+            else:
+                if not form1.is_valid():
+                    print(form1.errors)
+                if not form2.is_valid():
+                    print(form2.errors)
     cart_obj, username, token = _call_get_cart_api(request)
 
     context = {
@@ -482,6 +483,7 @@ def order_page(request):
         'form1': Customer_form,
         'form2': Transcation_form,
         'shopping_list': Cart_list,
+        "total_price": total_price,
         "Cart_nums": len(cart_obj) if isinstance(cart_obj, list) else 0,
     }
     return render(request, 'shopping/order.html', context)
