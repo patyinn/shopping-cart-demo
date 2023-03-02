@@ -100,7 +100,7 @@ def category_page(request, mom):
 def plant_page(request, child):
     mom_plant = MomPlantModel.objects
     plant_detail = get_object_or_404(ChildPlantModel, name=child)
-    plant_image = ChildImageModel.objects.get(name=child)
+    plant_image = ChildImageModel.objects.filter(name=child)
     mom = plant_detail.category
     plant = ChildPlantModel.objects.all().filter(category=mom)
     image_list = [i for i in vars(plant_image).values()][3:]
@@ -386,7 +386,7 @@ def order_page(request):
                 customer = request.POST["customer"]
                 email = request.POST["email"]
                 tel = request.POST["tel"]
-
+                username = None
                 if request.user.is_authenticated:
                     username = request.user.username
                     if not CustomerModel.objects.filter(customer=customer, email=email, tel=tel, username=username).exists():
