@@ -30,8 +30,6 @@ class CustomerModelForm(forms.ModelForm):
 class TranscationModelForm(forms.ModelForm):
     class Meta:
         model = TransactionModel
-        payment = forms.ChoiceField(choices=[doc.payment for doc in TransactionModel.objects.all()])
-        delivery = forms.ChoiceField(choices=[doc.delivery for doc in TransactionModel.objects.all()])
         fields = ["payment", "delivery", "address", "comment"]
         widgets = {
             'payment': forms.Select(attrs={'class': 'form-control', 'style': 'width:50%'}),
@@ -47,6 +45,11 @@ class TranscationModelForm(forms.ModelForm):
             'address': '交易地址',
             'comment': "備註"
         }
+    def __init__(self):
+        super().__init__()
+        transaction_obj = TransactionModel.objects.all()
+        self.fields["payment"].choices = [doc.payment for doc in transaction_obj]
+        self.fields["delivery"].choices = [doc.delivery for doc in transaction_obj]
 
 class RegisterModelForm(UserCreationForm):
 
