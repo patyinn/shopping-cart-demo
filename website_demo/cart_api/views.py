@@ -48,7 +48,7 @@ def _process_data(func):
                     token=cart_token,
                     is_auth=False,
                 )
-            except UserModel.DoesNotExist:
+            except:
                 latest = UserModel.objects.last()
                 code = int(latest.pk) + 1 if latest else 1
                 user_obj = UserModel.objects.create(
@@ -76,7 +76,9 @@ def _process_data(func):
                 expires=datetime.datetime.now() + datetime.timedelta(days=30)
             )
         return response
+
     return wrap
+
 
 # Create your views here.
 class CartList(APIView):
@@ -162,6 +164,7 @@ class CartList(APIView):
                 },
                 status.HTTP_400_BAD_REQUEST
             )
+
 
 class CartDetail(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
@@ -279,8 +282,9 @@ class CartDetail(APIView):
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import authentication_classes
 
+
 @api_view(["GET", "POST", "PUT", "DELETE"])
-@authentication_classes((SessionAuthentication, BasicAuthentication, ))
+@authentication_classes((SessionAuthentication, BasicAuthentication,))
 @_process_data
 def product_process(request, product_id, class_name, app_name, *args, **kwargs):
     request_data = dict(request.data)
@@ -377,4 +381,3 @@ def product_process(request, product_id, class_name, app_name, *args, **kwargs):
             },
             status.HTTP_400_BAD_REQUEST
         )
-
