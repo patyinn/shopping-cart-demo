@@ -477,6 +477,7 @@ class CartListTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(len(CartModel.objects.filter(user=self.user1)), expected_result)
 
+
 class CartDetailTests(TestCase):
     databases = "__all__"
 

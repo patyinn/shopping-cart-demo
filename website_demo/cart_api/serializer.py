@@ -34,6 +34,8 @@ class ProductSerializer(serializers.ModelSerializer):
 class CartSerializer(serializers.ModelSerializer):
     product = ProductSerializer(many=False)
     user = serializers.PrimaryKeyRelatedField(queryset=UserModel.objects.all())
+    total_price = serializers.SerializerMethodField(method_name="calculate_price")
+
 
     class Meta:
         model = CartModel
@@ -43,6 +45,7 @@ class CartSerializer(serializers.ModelSerializer):
             "user",
             "quantity",
             "valid",
+            "total_price",
         )
         read_only_fields = ['id']
 
@@ -70,16 +73,25 @@ class CartSerializer(serializers.ModelSerializer):
                     if self.validated_data["quantity"] > product_obj.inventory:
                         self.validated_data["quantity"] = int(product_obj.inventory)
                     self.instance = exist_cart_obj
-            except ProductModel.DoesNotExist:
+            except:
                 product_obj = ProductModel(**product_info)
                 product_obj.save()
 
                 inventory = product_obj.inventory
                 self.validated_data["product"] = product_obj
         else:
-            inventory = product_info["inventory"]
-            if self.validated_data["quantity"] > int(product_info["inventory"]):
-                self.validated_data["quantity"] = int(product_info["inventory"])
+            try:
+                product_obj = ProductModel.objects.get(
+                    product_id=product_info["product_id"],
+                    class_name=product_info["class_name"],
+                    app_name=product_info["app_name"],
+                )
+                inventory = int(product_obj.inventory)
+            except:
+                inventory = int(product_info["inventory"])
+
+            if self.validated_data["quantity"] > inventory:
+                self.validated_data["quantity"] = inventory
             if self.validated_data["quantity"] == 0:
                 self.validated_data["valid"] = False
 
@@ -89,3 +101,9 @@ class CartSerializer(serializers.ModelSerializer):
 
         super().save()
 
+
+    def calculate_price(self, obj):
+        if obj.product.sale_price:
+            return obj.product.sale_price * obj.quantity
+        else:
+            return obj.product.price * obj.quantity
