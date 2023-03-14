@@ -203,21 +203,9 @@ class CartDetail(APIView):
         try:
             cart_obj = CartModel.objects.get(pk=entry_id, user=user_obj)
 
-            product_serializer = ProductSerializer(data=request.data)
-
-            if product_serializer.is_valid():
-                product_data = product_serializer.data
-            else:
-                return (
-                    {
-                        "message": product_serializer.errors
-                    },
-                    status.HTTP_400_BAD_REQUEST
-                )
-
             cart_data = {
                 "user": user_obj.pk,
-                "product": product_data,
+                "product": cart_obj.product.__dict__,
                 "quantity": request.data.get("quantity"),
                 "valid": request.data.get("valid")
             }

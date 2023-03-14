@@ -80,15 +80,7 @@ class CartSerializer(serializers.ModelSerializer):
                 inventory = product_obj.inventory
                 self.validated_data["product"] = product_obj
         else:
-            try:
-                product_obj = ProductModel.objects.get(
-                    product_id=product_info["product_id"],
-                    class_name=product_info["class_name"],
-                    app_name=product_info["app_name"],
-                )
-                inventory = int(product_obj.inventory)
-            except:
-                inventory = int(product_info["inventory"])
+            inventory = int(self.instance.product.inventory)
 
             if self.validated_data["quantity"] > inventory:
                 self.validated_data["quantity"] = inventory
