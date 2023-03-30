@@ -1,9 +1,12 @@
 from django.urls import path
+from rest_framework.urlpatterns import format_suffix_patterns
 
-from . import views
+from cart_api import views
 
 urlpatterns = [
-    # path('', views.index, name='index'),  # view cart items
-    # path('add/<str:merchandise_id>', views.add_cart, name='add_cart'),  # add merchandise to cart
-    # path('remove/<str:merchandise_id>', views.remove_cart, name='remove_cart'),  # remove merchandise from cart
+    path('cart/product/<str:product_id>/<str:class_name>/<str:app_name>', views.product_process, name='ProductDetail'),
+    path('cart/', views.CartList.as_view(), name='CartList'),
+    path('cart/<int:entry_id>', views.CartDetail.as_view(), name='CartDetail'),
 ]
+
+urlpatterns = format_suffix_patterns(urlpatterns)
