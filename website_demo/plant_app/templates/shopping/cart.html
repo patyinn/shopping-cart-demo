@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>購物車</title>
+    <!-- Favicon-->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Bootstrap icons-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation-->
+    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light" role="navigation">
+        {% load static %}
+        <div class="container px-4 px-lg-5">
+            <a class="navbar-brand" href="/"><img src="{% static 'Logo_black.png' %}" height="50px" width="50px">休息一下</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#!">About</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Shop</a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item">All Products</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            {% for plant in plant_object.all %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'category' plant.mom %}">鹿角蕨</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                </ul>
+                <form class="d-flex">
+                    <a class="btn btn-outline-dark" href="{% url 'Cart' %}">
+                        <i class="bi-cart-fill me-1"></i>
+                        Cart
+                        <span class="badge bg-dark text-white ms-1 rounded-pill">{{ Cart_nums }}</span>
+                    </a>
+                </form>
+                {% if not request.user.is_authenticated %}
+                <a class="btn btn-outline-dark" href="{% url 'Login' %}" role="button">登入 &#187;</a>
+                {% else %}
+                <a class="nav-link active">
+                    你好，{{ request.user.username }}
+                    <a class="btn btn-outline-dark" href="{% url 'Logout' %}" role="button">登出 &#187;</a>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <!-- Header-->
+    <header class="bg-dark py-5">
+        <div class="container px-4 px-lg-5 my-5">
+            <div class="text-center text-white">
+                <h1 class="display-4 fw-bolder">
+                    <img src="{% static 'Logo_white.png' %}" height="100px" width="100px">
+                    我的購物車
+                </h1>
+                <p class="lead fw-normal text-white-50 mb-0">訂單明細</p>
+            </div>
+        </div>
+    </header>
+
+    <div class='row'>
+    <div class='container col-sm-12 py-3 px-5'>
+        <div class='panel panel-info'>
+            <div class=class="table-responsive">
+                {% for item in cart %}
+                    {% if forloop.first %}
+                    <table border=1 class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                            <td width=300 align=center>產品名稱</td>
+                            <td width=300 align=center>產品圖</td>
+                            <td width=100 align=center>單價</td>
+                            <td width=100 align=center>數量</td>
+                            <td width=100 align=center>小計</td>
+                            <td width=100 align=center>刪除</td>
+                        </tr>
+                    {% endif %}
+                    </thead>
+                    <tbody>
+                    <div class='listgroup'>
+                        <div class='listgroup-item'>
+                            <tr>
+                                <td align=center valign="middle">
+                                    <a href="{% url 'plant_page' item.product.product_name %}" style="text-decoration:none; color:black;">
+                                        {{ item.product.product_name }}
+                                    </a>
+                                </td>
+                                <td align=center valign="middle">
+                                    <img src="{{ item.product.main_image }}"  class="img-thumbnail">
+                                </td>
+                                {% if item.product.sale_price %}
+                                <td align=center valign="middle">
+                                    <p class="text-muted text-decoration-line-through">
+                                        NT${{ item.product.price }}
+                                    </p>
+                                    <p>NT${{ item.product.sale_price }}</p>
+                                </td>
+                                {% else %}
+                                <td align=center valign="middle">NT${{ item.product.price }}</td>
+                                {% endif %}
+                                <td align=center valign="middle">
+                                  <form action="{% url 'update_cart' item.product.product_name item.id %}" method="post">
+                                    {% csrf_token %}
+                                    <select name="qty" onchange="this.form.submit()">
+                                      {% for n in item.product.inventory %}
+                                        {% if n == item.quantity %}
+                                            <option value={{n}} selected="selected">{{ n }}</option>
+                                        {% else %}
+                                            <option value={{n}}>{{ n }}</option>
+                                        {% endif %}
+                                      {% endfor %}
+                                    </select>
+                                      <input type="hidden" name="_update">
+                                  </form>
+                                </td>
+
+                                <td align=center valign="middle">NT${{ item.price }}</td>
+                                <td align=center valign="middle">
+                                <a class="btn btn-outline-dark" href='{% url "remove_cart" item.id %}'>
+                                    刪除
+                                </a>
+                                </td>
+                            </tr>
+                        </div>
+                    </div>
+                    {% if forloop.last %}
+                    </tbody>
+                    </table>
+                <div class='panel panel-footer' align="right"> 總計：NT${{ total_price }}元 </div>
+                <a class="btn btn-outline-dark flex-shrink-0" type="button" href='/' style="float:right">
+                    <i class="bi-cart-fill me-1"></i>
+                    返回首頁
+                </a>
+                <a class="btn btn-outline-dark flex-shrink-0" type="button" href='{% url "Ordering" %}' style="float:right">
+                    <i class="bi-cart-fill me-1"></i>
+                    我要訂購
+                </a>
+                {% endif %}
+                {% empty %}
+                {% if messages %}
+                    <ul class="messages">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible text-center" role="alert">
+                            <strong>
+                                {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                                    Error
+                                {% else %}
+                                    {{ message.tags|title }}
+                                {% endif %}
+                            </strong>
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="px-5 py-5">
+                        <em>購物車是空的</em>
+                    </div>
+                {% endif %}
+                <a class="btn btn-outline-dark flex-shrink-0" type="button" href='/' style="float:center">
+                    <i class="bi-cart-fill me-1"></i>
+                    我要訂購
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+    </section>
+    <!-- Footer-->
+    <footer class="py-5 bg-dark">
+        <div class="container"><p class="m-0 text-center text-white">Template from https://startbootstrap.com/template/shop-item</p></div>
+    </footer>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

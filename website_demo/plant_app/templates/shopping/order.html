@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>訂單頁面</title>
+    <!-- Favicon-->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Bootstrap icons-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+
+    <style>
+    #panel, #saved {
+      padding: 5px;
+      width: 50%;
+      text-align: center;
+      border: solid 1px #212529;
+      border-radius:.3rem
+    }
+
+    #panel {
+      display: none;
+    }
+    </style>
+</head>
+
+  <body class="bg-light">
+    <!-- Navigation-->
+    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light" role="navigation">
+        {% load static %}
+        <div class="container px-4 px-lg-5">
+            <a class="navbar-brand" href="/"><img src="{% static 'Logo_black.png' %}" height="50px" width="50px">休息一下</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#!">About</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Shop</a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="#!">All Products</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            {% for plant in plant_object.all %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'category' plant.mom %}">鹿角蕨</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                </ul>
+                <form class="d-flex">
+                    <a class="btn btn-outline-dark" href="{% url 'Cart' %}">
+                        <i class="bi-cart-fill me-1"></i>
+                        Cart
+                        <span class="badge bg-dark text-white ms-1 rounded-pill">{{ Cart_nums }}</span>
+                    </a>
+                </form>
+                {% if not request.user.is_authenticated %}
+                <a class="btn btn-outline-dark" href="{% url 'Login' %}" role="button">登入 &#187;</a>
+                {% else %}
+                <a class="nav-link active">
+                    你好，{{ request.user.username }}
+                    <a class="btn btn-outline-dark" href="{% url 'Logout' %}" role="button">登出 &#187;</a>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <!-- Header-->
+    <header class="bg-dark py-5">
+        <div class="container px-4 px-lg-5 my-5">
+            <div class="text-center text-white">
+                <h1 class="display-4 fw-bolder">
+                    <img src="{% static 'Logo_white.png' %}" height="100px" width="100px">
+                    聯絡方式
+                </h1>
+                <p class="lead fw-normal text-white-50 mb-0">填寫聯絡資訊以方便聯絡您</p>
+            </div>
+        </div>
+    </header>
+    <div class="container py-5">
+      <main>
+        <div class="row g-5">
+          <div class="col-md-5 col-lg-4 order-md-last">
+            <h4 class="d-flex justify-content-between align-items-center mb-3">
+              <span class="text-primary">Your cart</span>
+              <span class="badge bg-primary rounded-pill">{{ Cart_nums }}</span>
+            </h4>
+            <ul class="list-group mb-3">
+            {% for item in shopping_list %}
+              <li class="list-group-item d-flex justify-content-between lh-sm">
+                <div>
+                  <h6 class="my-0">{{ item.product.product_name }}</h6>
+                  <small class="text-muted">x {{ item.quantity }}</small>
+                </div>
+                <span class="text-muted">${{ item.price }}</span>
+              </li>
+            {% endfor %}
+
+                {% if not promote_info.active %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>總計，不含運費 (TWD)</span>
+                    <strong>
+                        {{ total_price }}
+                    元</strong>
+                {% else %}
+                <li class="list-group-item d-flex justify-content-between bg-light">
+                    <div class="text-success">
+                      <h6 class="my-0">{{ promote_info.promo_code }}</h6>
+                      <small>{{ promote_info.description }}</small>
+                    </div>
+                    <span class="text-success">- ${{ promote_sum.1 }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>總計，不含運費 (TWD)</span>
+                    <strong>
+                    {{ promote_sum.0 }}
+                    元</strong>
+                </li>
+                {% endif %}
+    <!--        <div id="sum"></div>-->
+            </ul>
+              <span style="color: orange;"><small>{{ promote_info.description }}</small></span>
+            <form class="card p-2" method="post">
+              {% csrf_token %}
+              <div class="input-group">
+                <input type="text" class="form-control" placeholder="Promo code" name="code">
+                <button type="submit" class="btn btn-secondary" id="promote_btn">使用</button>
+                <input type="hidden" name="promote">
+              </div>
+            </form>
+          </div>
+
+          <div class="col-md-7 col-lg-8">
+              <h4 class="mb-3"><strong>聯絡方式</strong></h4>
+            {% if request.user.is_authenticated %}
+            <form action="{% url 'Ordering' %}" method="post">
+                {% csrf_token %}
+                <div class="form-switch">
+                    <input class="form-check-input" type="checkbox" name="delete_trans" id="Switch">
+                    <label class="form-check-label" for="Switch">刪除資料紀錄</label>
+                </div>
+                <div id="saved">儲存的資料</div>
+                <div id="panel">
+                    {% if saved_info == '無儲存紀錄' %}
+                        <p>{{ saved_info }}</p>
+                    {% else %}
+                        {% for info_1 in saved_info %}
+                        {% for info in info_1 %}
+                        <button class="btn btn-outline-danger" style="border: transparent"
+                                type="submit" name="Submit" value="{{ info.customer_id }}/{{ info.address }}/{{ info.delivery }}">
+                            <dl class="row list-unstyled">
+                                <dt class="col-sm-3 align-self-center text-center">
+                                    {% if info.delivery == 'S' %}
+                                    <p class="text-center">交貨方式: 7-11交貨便</p>
+                                    {% elif info.delivery == 'P' %}
+                                    <p class="text-center">交貨方式: 郵局宅配</p>
+                                    {% elif info.delivery == 'F' %}
+                                    <p class="text-center">交貨方式: 面交</p>
+                                    {% endif %}
+                                </dt>
+                                <dd class="col-sm-9">
+                                    <li class="text-start">名稱: {{ info.customer__customer }}</li>
+                                    <li class="text-start">電子信箱: {{ info.customer__email }}</li>
+                                    <li class="text-start">電話: {{ info.customer__tel }}</li>
+                                    <li class="text-start">地址: {{ info.address }}</li>
+                                </dd>
+                            </dl>
+                        </button>
+                        {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                    <input type="hidden" name="take">
+                </div>
+            </form>
+            {% endif %}
+            <form class="needs-validation" method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-sm-10">
+                      {% for column in form1 %}
+                        <div class="form-group">
+                            {{ column.label_tag }}
+                            {{ column }}
+                            {{ column.errors }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                <hr class="my-4">
+                <h4 class="mb-3"><strong>如何交貨</strong></h4>
+                <div class="col-12">
+                  <div class="col-sm-10">
+                       {% for column in form2 %}
+                        <div class="form-group">
+                            {{ column.label_tag }}
+                            {{ column }}
+                            {{ column.errors }}
+                        </div>
+                      {% endfor %}
+                  </div>
+                </div>
+                {% if request.user.is_authenticated %}
+                <div class="form-switch">
+                    <input class="form-check-input" type="checkbox" name="save_trans" id="Switch2" checked>
+                    <label class="form-check-label" for="Switch2">儲存資料紀錄</label>
+                </div>
+                {% endif %}
+                <input class="btn btn-outline-dark mt-auto" type="submit" value="送出訂單">
+                <input type="hidden" name="purchase" value="yes">
+            </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+</div>
+
+    <!-- Footer-->
+    <footer class="py-5 bg-dark" style="bottom:0; left: 0; right: 0;">
+        <div class="container"><p class="m-0 text-center text-white">Template from https://startbootstrap.com/template/shop-item</p></div>
+    </footer>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!--  jQuery slide  -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $("#saved").click(function(){
+                $("#panel").slideToggle("slow");
+            });
+            $("#saved").mouseleave(function(){
+                $("#saved").css({ "color": "#212529", "background-color": "#f8f9fa", "border-color": "#212529" });
+            });
+            $("#saved").mouseenter(function(){
+                $("#saved").css({ "color": "#fff", "background-color": "#212529", "border-color": "#212529" });
+            });
+        });
+<!--        $(document).ready(function(){-->
+<!--            $("#promote_btn").click(function(){-->
+<!--                var origin = {{ shopping_list.summary }};-->
+<!--                var effect = {{ promote_info.effect }};-->
+<!--                var property = {{ promote_info.property }};-->
+<!--                if (property == '%'){-->
+<!--                    var total = origin * effect;-->
+<!--                }-->
+<!--                else if (property == 'm'){-->
+<!--                    var total = origin - effect;-->
+<!--                }-->
+<!--                else{-->
+<!--                    var total = origin;-->
+<!--                }-->
+<!--                $("#sum").html(total);-->
+<!--            });-->
+<!--        });-->
+    </script>
+  </body>
+</html>
