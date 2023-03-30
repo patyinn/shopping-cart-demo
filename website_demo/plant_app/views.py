@@ -9,6 +9,8 @@ from requests.auth import HTTPBasicAuth
 
 from django.core.cache import cache
 from django.shortcuts import render, get_object_or_404, HttpResponse, redirect, HttpResponseRedirect
+from django.http.response import JsonResponse
+from django.views.decorators.http import require_http_methods
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 # https://www.learncodewithmike.com/2020/05/django-send-email.html
@@ -47,6 +49,10 @@ def _call_get_cart_api(request):
     token = response.cookies.get(settings.CART_KEY)
     return cart_obj, username, token
 
+@require_http_methods(["GET"])
+def ajax_get_cart(request):
+    cart_obj, username, token = _call_get_cart_api(request)
+    return HttpResponse(JsonResponse(cart_obj, safe=False))
 
 def index(request):
     plant_obj = MomPlantModel.objects.all()

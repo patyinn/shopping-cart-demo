@@ -19,5 +19,7 @@ urlpatterns = [
     path('accounts/logout', views.logout_page, name='Logout'),
     path('activate/<str:token>', views.activate_page, name='Activate'),
 
+    path('ajax/get/cart/', views.ajax_get_cart, name='ajax_get_cart'),
+
     path("favicon.ico", RedirectView.as_view(url=staticfiles_storage.url("favicon.ico")))
 ]
