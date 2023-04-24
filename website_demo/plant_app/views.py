@@ -384,7 +384,6 @@ def order_page(request):
                 remove_from_cart(request, Cart_data.loc[prod, 'id'])
                 break
 
-        print(check_ok)
         if check_ok:
             if form1.is_valid() and form2.is_valid():
 
